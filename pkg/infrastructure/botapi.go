@@ -16,11 +16,6 @@ const (
 	startCommand = "start"
 )
 
-type fileInfo struct {
-	FileID string
-	Size   int
-}
-
 func NewBotAPI(bot *tgbotapi.BotAPI, ownerChatID int64) app.BotAPI {
 	return &botAPI{
 		bot:         bot,

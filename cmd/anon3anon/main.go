@@ -3,36 +3,53 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/nightnoryu/anon3anon/pkg/app"
 )
 
-const telegramBotTokenEnvKey = "TELEGRAM_BOT_TOKEN"
+const (
+	telegramBotTokenEnvKey = "TELEGRAM_BOT_TOKEN"
+	ownerChatIDEnvKey      = "OWNER_CHAT_ID"
+)
+
+type config struct {
+	Token       string
+	OwnerChatID int64
+}
+
+func getConfig() (config, error) {
+	token := os.Getenv(telegramBotTokenEnvKey)
+	ownerChatID, err := strconv.ParseInt(os.Getenv(ownerChatIDEnvKey), 10, 64)
+	if err != nil {
+		return config{}, err
+	}
+
+	return config{
+		Token:       token,
+		OwnerChatID: ownerChatID,
+	}, nil
+}
 
 func main() {
-	token := os.Getenv(telegramBotTokenEnvKey)
-	bot, err := tgbotapi.NewBotAPI(token)
+	config, err := getConfig()
 	if err != nil {
 		log.Panic(err)
 	}
 
-	bot.Debug = true
+	bot, err := tgbotapi.NewBotAPI(config.Token)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	//bot.Debug = true
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	service := app.NewAnonymousQuestionsService(bot, config.OwnerChatID)
 
-	updates := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
-		}
+	if err := service.ListenForMessages(); err != nil {
+		log.Panic(err)
 	}
 }

@@ -14,7 +14,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println(conf)
 	bot, err := tgbotapi.NewBotAPI(conf.TelegramBotToken)
 	if err != nil {
 		log.Panic(err)

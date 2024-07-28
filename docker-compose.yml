@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  anon3anon:
+    container_name: anon3anon
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env

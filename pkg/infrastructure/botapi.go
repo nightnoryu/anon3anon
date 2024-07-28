@@ -11,8 +11,9 @@ import (
 
 const (
 	updateTimeoutInSeconds = 60
-	startCommand           = "/start"
 	messageParseMode       = tgbotapi.ModeMarkdown
+
+	startCommand = "start"
 )
 
 type fileInfo struct {

@@ -1,12 +1,10 @@
-FROM debian:11-slim
-RUN apt-get update && \
-    apt-get install -y --no-install-suggests --no-install-recommends ca-certificates && \
-    apt-get install -y curl && \
-    apt-get clean && \
-    groupadd -g 1001 serviceuser && \
-    useradd -u 1001 -r -g 1001 -s /sbin/nologin -c "go service user" serviceuser
+FROM golang:1.22.5
 
-ADD /bin/anon3anon /app/bin/anon3anon
 WORKDIR /app
 
-CMD [ "/app/bin/anon3anon" ]
+COPY . .
+
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/anon3anon ./cmd/anon3anon
+
+CMD ["/app/bin/anon3anon"]

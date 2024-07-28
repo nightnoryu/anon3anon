@@ -1,66 +1,72 @@
 package app
 
-import (
-	"log"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-)
-
-func NewAnonymousQuestionsService(bot *tgbotapi.BotAPI, ownerChatID int64) AnonymousMessagesService {
+func NewAnonymousQuestionsService(api BotAPI, errorsChan chan error) AnonymousMessagesService {
 	return &anonymousMessagesService{
-		bot:         bot,
-		ownerChatID: ownerChatID,
+		api:        api,
+		errorsChan: errorsChan,
 	}
 }
 
+const (
+	messageSentReply       = "*Сообщение отправлено!*"
+	newMessageNotification = "*Новое анонимное сообщение!*"
+)
+
 type AnonymousMessagesService interface {
-	ListenForMessages() error
+	ServeMessages() error
 }
 
 type anonymousMessagesService struct {
-	bot         *tgbotapi.BotAPI
-	ownerChatID int64
+	api        BotAPI
+	errorsChan chan error
 }
 
-func (s *anonymousMessagesService) ListenForMessages() error {
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates := s.bot.GetUpdatesChan(u)
-	for update := range updates {
-		if update.Message == nil {
-			continue
+func (s *anonymousMessagesService) ServeMessages() error {
+	return s.api.HandleUpdates(func(update MessageUpdate) {
+		if update.Command != nil {
+			err := s.handleCommand(update)
+			if err != nil {
+				s.errorsChan <- err
+			}
+			return
 		}
 
-		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-		if update.Message.Text == "/start" {
-			reply := tgbotapi.NewMessage(update.Message.Chat.ID, "Жду твоих вопросов!")
-			s.bot.Send(reply)
-			continue
+		err := s.handleMessage(update.Message)
+		if err != nil {
+			s.errorsChan <- err
 		}
 
-		if len(update.Message.Photo) > 0 {
-			var photos []interface{}
-			photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileID(update.Message.Photo[0].FileID))
-			photo.Caption = "*Новое анонимное сообщение!*"
-			photo.ParseMode = tgbotapi.ModeMarkdown
-			photos = append(photos, photo)
-
-			mediaMsg := tgbotapi.NewMediaGroup(s.ownerChatID, photos)
-
-			s.bot.Send(mediaMsg)
-		} else {
-			msg := tgbotapi.NewMessage(s.ownerChatID, "*Новое анонимное сообщение!*\n\n"+update.Message.Text)
-			msg.ParseMode = tgbotapi.ModeMarkdown
-
-			s.bot.Send(msg)
+		err = s.pingClient(update.FromChatID)
+		if err != nil {
+			s.errorsChan <- err
 		}
+	})
+}
 
-		reply := tgbotapi.NewMessage(update.Message.Chat.ID, "Сообщение отправлено!")
-
-		s.bot.Send(reply)
+func (s *anonymousMessagesService) handleCommand(update MessageUpdate) error {
+	if update.Command == nil {
+		return nil
 	}
 
-	return nil
+	var msgText string
+	switch *update.Command {
+	case StartCommand:
+		msgText = "Жду твоих вопросов!"
+	case UnknownCommand:
+		msgText = "Неизвестная команда!"
+	}
+
+	return s.api.SendMessage(update.FromChatID, Message{Text: msgText})
+}
+
+func (s *anonymousMessagesService) pingClient(chatID int64) error {
+	return s.api.SendMessage(chatID, Message{Text: messageSentReply})
+}
+
+func (s *anonymousMessagesService) handleMessage(message Message) error {
+	msgText := newMessageNotification + "\n\n" + message.Text
+	return s.api.SendMessageToOwner(Message{
+		Text:  msgText,
+		Image: message.Image,
+	})
 }

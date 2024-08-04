@@ -16,9 +16,10 @@ type MessageUpdate struct {
 }
 
 type Message struct {
-	Text  string
-	Image *Image
-	Video *Video
+	Text        string
+	UseMarkdown bool
+	Image       *Image
+	Video       *Video
 }
 
 type Image struct {

@@ -22,7 +22,9 @@ func (h *commandHandler) HandleCommand(update MessageUpdate) error {
 	var msgText string
 	switch *update.Command {
 	case StartCommand:
-		msgText = "Жду твоих вопросов!"
+		msgText = "Жду твоих вопросов!!\nОтветы будут в канале @meme_me_a_meme (>ᴗ•)"
+	case InfoCommand:
+		msgText = "Бот привязан к каналу @meme_me_a_meme, так что ответы ищи там!!\nНа данный момент поддерживаются текст, фото и видео („• ᴗ •„)"
 	case UnknownCommand:
 		msgText = "Неизвестная команда!"
 	}

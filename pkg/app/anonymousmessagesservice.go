@@ -14,7 +14,7 @@ func NewAnonymousQuestionsService(
 
 const (
 	messageSentReply       = "*Сообщение отправлено!*"
-	newMessageNotification = "*Новое анонимное сообщение!*"
+	newMessageNotification = "Новое анонимное сообщение!"
 )
 
 type AnonymousMessagesService interface {
@@ -50,7 +50,10 @@ func (s *anonymousMessagesService) ServeMessages() error {
 }
 
 func (s *anonymousMessagesService) pingClient(chatID int64) error {
-	return s.api.SendMessage(chatID, Message{Text: messageSentReply})
+	return s.api.SendMessage(chatID, Message{
+		Text:        messageSentReply,
+		UseMarkdown: true,
+	})
 }
 
 func (s *anonymousMessagesService) handleMessage(message Message) error {

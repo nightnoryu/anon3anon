@@ -11,7 +11,6 @@ import (
 
 const (
 	updateTimeoutInSeconds = 60
-	messageParseMode       = tgbotapi.ModeMarkdown
 
 	startCommand = "start"
 	infoCommand  = "info"
@@ -88,7 +87,10 @@ func (api *botAPI) sendTextMessage(chatID int64, message app.Message) error {
 		chatID,
 		message.Text,
 	)
-	msg.ParseMode = messageParseMode
+
+	if message.UseMarkdown {
+		msg.ParseMode = tgbotapi.ModeMarkdown
+	}
 
 	_, err := api.bot.Send(msg)
 	return errors.WithStack(err)
@@ -160,7 +162,10 @@ func (api *botAPI) hydrateVideo(video *tgbotapi.Video) *app.Video {
 func (api *botAPI) preparePhotos(message app.Message) []interface{} {
 	photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileID(message.Image.FileID))
 	photo.Caption = message.Text
-	photo.ParseMode = messageParseMode
+
+	if message.UseMarkdown {
+		photo.ParseMode = tgbotapi.ModeMarkdown
+	}
 
 	var photos []interface{}
 	photos = append(photos, photo)
@@ -171,6 +176,10 @@ func (api *botAPI) preparePhotos(message app.Message) []interface{} {
 func (api *botAPI) prepareVideo(message app.Message) []interface{} {
 	video := tgbotapi.NewInputMediaVideo(tgbotapi.FileID(message.Video.FileID))
 	video.Caption = message.Text
-	video.ParseMode = messageParseMode
+
+	if message.UseMarkdown {
+		video.ParseMode = tgbotapi.ModeMarkdown
+	}
+
 	return []interface{}{video}
 }

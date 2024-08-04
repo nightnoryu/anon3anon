@@ -14,6 +14,7 @@ const (
 	messageParseMode       = tgbotapi.ModeMarkdown
 
 	startCommand = "start"
+	infoCommand  = "info"
 )
 
 func NewBotAPI(bot *tgbotapi.BotAPI, ownerChatID int64) app.BotAPI {
@@ -58,6 +59,10 @@ func (api *botAPI) SendMessage(chatID int64, message app.Message) error {
 		return api.sendPhotoMessage(chatID, message)
 	}
 
+	if message.Video != nil {
+		return api.sendVideoMessage(chatID, message)
+	}
+
 	return api.sendTextMessage(chatID, message)
 }
 
@@ -74,6 +79,7 @@ func (api *botAPI) hydrateMessage(msg *tgbotapi.Message) app.Message {
 	return app.Message{
 		Text:  text,
 		Image: api.hydrateImage(msg.Photo),
+		Video: api.hydrateVideo(msg.Video),
 	}
 }
 
@@ -96,6 +102,14 @@ func (api *botAPI) sendPhotoMessage(chatID int64, message app.Message) error {
 	return errors.WithStack(err)
 }
 
+func (api *botAPI) sendVideoMessage(chatID int64, message app.Message) error {
+	video := api.prepareVideo(message)
+	mediaMsg := tgbotapi.NewMediaGroup(chatID, video)
+
+	_, err := api.bot.Send(mediaMsg)
+	return errors.WithStack(err)
+}
+
 func (api *botAPI) hydrateCommand(msg *tgbotapi.Message) *app.Command {
 	if !msg.IsCommand() {
 		return nil
@@ -105,6 +119,8 @@ func (api *botAPI) hydrateCommand(msg *tgbotapi.Message) *app.Command {
 	switch msg.Command() {
 	case startCommand:
 		cmd = app.StartCommand
+	case infoCommand:
+		cmd = app.InfoCommand
 	default:
 		cmd = app.UnknownCommand
 	}
@@ -131,6 +147,16 @@ func (api *botAPI) hydrateImage(photos []tgbotapi.PhotoSize) *app.Image {
 	}
 }
 
+func (api *botAPI) hydrateVideo(video *tgbotapi.Video) *app.Video {
+	if video == nil {
+		return nil
+	}
+
+	return &app.Video{
+		FileID: video.FileID,
+	}
+}
+
 func (api *botAPI) preparePhotos(message app.Message) []interface{} {
 	photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileID(message.Image.FileID))
 	photo.Caption = message.Text
@@ -140,4 +166,11 @@ func (api *botAPI) preparePhotos(message app.Message) []interface{} {
 	photos = append(photos, photo)
 
 	return photos
+}
+
+func (api *botAPI) prepareVideo(message app.Message) []interface{} {
+	video := tgbotapi.NewInputMediaVideo(tgbotapi.FileID(message.Video.FileID))
+	video.Caption = message.Text
+	video.ParseMode = messageParseMode
+	return []interface{}{video}
 }

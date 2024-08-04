@@ -18,6 +18,15 @@ type MessageUpdate struct {
 type Message struct {
 	Text  string
 	Image *Image
+	Video *Video
+}
+
+type Image struct {
+	FileID string
+}
+
+type Video struct {
+	FileID string
 }
 
 type Command int
@@ -25,8 +34,5 @@ type Command int
 const (
 	UnknownCommand Command = iota
 	StartCommand
+	InfoCommand
 )
-
-type Image struct {
-	FileID string
-}

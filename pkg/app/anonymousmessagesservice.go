@@ -1,9 +1,14 @@
 package app
 
-func NewAnonymousQuestionsService(api BotAPI, errorsChan chan error) AnonymousMessagesService {
+func NewAnonymousQuestionsService(
+	errorsChan chan error,
+	commandHandler CommandHandler,
+	api BotAPI,
+) AnonymousMessagesService {
 	return &anonymousMessagesService{
-		api:        api,
-		errorsChan: errorsChan,
+		errorsChan:     errorsChan,
+		commandHandler: commandHandler,
+		api:            api,
 	}
 }
 
@@ -17,14 +22,15 @@ type AnonymousMessagesService interface {
 }
 
 type anonymousMessagesService struct {
-	api        BotAPI
-	errorsChan chan error
+	errorsChan     chan error
+	commandHandler CommandHandler
+	api            BotAPI
 }
 
 func (s *anonymousMessagesService) ServeMessages() error {
 	return s.api.HandleUpdates(func(update MessageUpdate) {
 		if update.Command != nil {
-			err := s.handleCommand(update)
+			err := s.commandHandler.HandleCommand(update)
 			if err != nil {
 				s.errorsChan <- err
 			}
@@ -43,22 +49,6 @@ func (s *anonymousMessagesService) ServeMessages() error {
 	})
 }
 
-func (s *anonymousMessagesService) handleCommand(update MessageUpdate) error {
-	if update.Command == nil {
-		return nil
-	}
-
-	var msgText string
-	switch *update.Command {
-	case StartCommand:
-		msgText = "Жду твоих вопросов!"
-	case UnknownCommand:
-		msgText = "Неизвестная команда!"
-	}
-
-	return s.api.SendMessage(update.FromChatID, Message{Text: msgText})
-}
-
 func (s *anonymousMessagesService) pingClient(chatID int64) error {
 	return s.api.SendMessage(chatID, Message{Text: messageSentReply})
 }
@@ -68,5 +58,6 @@ func (s *anonymousMessagesService) handleMessage(message Message) error {
 	return s.api.SendMessageToOwner(Message{
 		Text:  msgText,
 		Image: message.Image,
+		Video: message.Video,
 	})
 }

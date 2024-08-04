@@ -20,9 +20,12 @@ func main() {
 	}
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	botAPI := infrastructure.NewBotAPI(bot, conf.OwnerChatID)
 	errorsChan := make(chan error)
-	service := app.NewAnonymousQuestionsService(botAPI, errorsChan)
+	botAPI := infrastructure.NewBotAPI(bot, conf.OwnerChatID)
+
+	commandHandler := app.NewCommandHandler(botAPI)
+
+	service := app.NewAnonymousQuestionsService(errorsChan, commandHandler, botAPI)
 	go func() {
 		for err := range errorsChan {
 			log.Println(err)

@@ -76,9 +76,10 @@ func (api *botAPI) hydrateMessage(msg *tgbotapi.Message) app.Message {
 	}
 
 	return app.Message{
-		Text:  text,
-		Image: api.hydrateImage(msg.Photo),
-		Video: api.hydrateVideo(msg.Video),
+		Text:    text,
+		Image:   api.hydrateImage(msg.Photo),
+		Video:   api.hydrateVideo(msg.Video),
+		Sticker: api.hydrateSticker(msg.Sticker),
 	}
 }
 
@@ -156,6 +157,17 @@ func (api *botAPI) hydrateVideo(video *tgbotapi.Video) *app.Video {
 
 	return &app.Video{
 		FileID: video.FileID,
+	}
+}
+
+func (api *botAPI) hydrateSticker(sticker *tgbotapi.Sticker) *app.Sticker {
+	if sticker == nil {
+		return nil
+	}
+
+	return &app.Sticker{
+		FileID: sticker.FileID,
+		Emoji:  sticker.Emoji,
 	}
 }
 

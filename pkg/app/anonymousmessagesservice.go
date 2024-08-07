@@ -13,7 +13,9 @@ func NewAnonymousQuestionsService(
 }
 
 const (
-	messageSentReply       = "*Сообщение отправлено!*"
+	messageSentReply        = "*Сообщение отправлено!*"
+	unsupportedMessageReply = "*Такое сообщение не поддерживается :(*"
+
 	newMessageNotification = "Новое анонимное сообщение!"
 )
 
@@ -37,30 +39,33 @@ func (s *anonymousMessagesService) ServeMessages() error {
 			return
 		}
 
-		err := s.handleMessage(update.Message)
+		if update.Message.Sticker != nil {
+			err := s.api.SendMessage(update.FromChatID, Message{
+				Text:        unsupportedMessageReply,
+				UseMarkdown: true,
+			})
+			if err != nil {
+				s.errorsChan <- err
+			}
+			return
+		}
+
+		notificationText := newMessageNotification + "\n\n" + update.Message.Text
+		err := s.api.SendMessageToOwner(Message{
+			Text:  notificationText,
+			Image: update.Message.Image,
+			Video: update.Message.Video,
+		})
 		if err != nil {
 			s.errorsChan <- err
 		}
 
-		err = s.pingClient(update.FromChatID)
+		err = s.api.SendMessage(update.FromChatID, Message{
+			Text:        messageSentReply,
+			UseMarkdown: true,
+		})
 		if err != nil {
 			s.errorsChan <- err
 		}
-	})
-}
-
-func (s *anonymousMessagesService) pingClient(chatID int64) error {
-	return s.api.SendMessage(chatID, Message{
-		Text:        messageSentReply,
-		UseMarkdown: true,
-	})
-}
-
-func (s *anonymousMessagesService) handleMessage(message Message) error {
-	msgText := newMessageNotification + "\n\n" + message.Text
-	return s.api.SendMessageToOwner(Message{
-		Text:  msgText,
-		Image: message.Image,
-		Video: message.Video,
 	})
 }

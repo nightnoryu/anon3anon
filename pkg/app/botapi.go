@@ -20,6 +20,7 @@ type Message struct {
 	UseMarkdown bool
 	Image       *Image
 	Video       *Video
+	Sticker     *Sticker
 }
 
 type Image struct {
@@ -28,6 +29,11 @@ type Image struct {
 
 type Video struct {
 	FileID string
+}
+
+type Sticker struct {
+	FileID string
+	Emoji  string
 }
 
 type Command int

@@ -58,8 +58,16 @@ func (api *botAPI) SendMessage(chatID int64, message app.Message) error {
 		return api.sendPhotoMessage(chatID, message)
 	}
 
+	if message.Audio != nil {
+		return api.sendAudioMessage(chatID, message)
+	}
+
 	if message.Video != nil {
 		return api.sendVideoMessage(chatID, message)
+	}
+
+	if message.Voice != nil {
+		return api.sendVoiceMessage(chatID, message)
 	}
 
 	return api.sendTextMessage(chatID, message)
@@ -78,8 +86,10 @@ func (api *botAPI) hydrateMessage(msg *tgbotapi.Message) app.Message {
 	return app.Message{
 		Text:    text,
 		Image:   api.hydrateImage(msg.Photo),
+		Audio:   api.hydrateAudio(msg.Audio),
 		Video:   api.hydrateVideo(msg.Video),
 		Sticker: api.hydrateSticker(msg.Sticker),
+		Voice:   api.hydrateVoice(msg.Voice),
 	}
 }
 
@@ -105,11 +115,31 @@ func (api *botAPI) sendPhotoMessage(chatID int64, message app.Message) error {
 	return errors.WithStack(err)
 }
 
+func (api *botAPI) sendAudioMessage(chatID int64, message app.Message) error {
+	audios := api.prepareAudio(message)
+	mediaMsg := tgbotapi.NewMediaGroup(chatID, audios)
+
+	_, err := api.bot.Send(mediaMsg)
+	return errors.WithStack(err)
+}
+
 func (api *botAPI) sendVideoMessage(chatID int64, message app.Message) error {
 	video := api.prepareVideo(message)
 	mediaMsg := tgbotapi.NewMediaGroup(chatID, video)
 
 	_, err := api.bot.Send(mediaMsg)
+	return errors.WithStack(err)
+}
+
+func (api *botAPI) sendVoiceMessage(chatID int64, message app.Message) error {
+	voiceMsg := tgbotapi.NewVoice(chatID, tgbotapi.FileID(message.Voice.FileID))
+
+	voiceMsg.Caption = message.Text
+	if message.UseMarkdown {
+		voiceMsg.ParseMode = tgbotapi.ModeMarkdown
+	}
+
+	_, err := api.bot.Send(voiceMsg)
 	return errors.WithStack(err)
 }
 
@@ -150,6 +180,16 @@ func (api *botAPI) hydrateImage(photos []tgbotapi.PhotoSize) *app.Image {
 	}
 }
 
+func (api *botAPI) hydrateAudio(audio *tgbotapi.Audio) *app.Audio {
+	if audio == nil {
+		return nil
+	}
+
+	return &app.Audio{
+		FileID: audio.FileID,
+	}
+}
+
 func (api *botAPI) hydrateVideo(video *tgbotapi.Video) *app.Video {
 	if video == nil {
 		return nil
@@ -171,6 +211,16 @@ func (api *botAPI) hydrateSticker(sticker *tgbotapi.Sticker) *app.Sticker {
 	}
 }
 
+func (api *botAPI) hydrateVoice(voice *tgbotapi.Voice) *app.Voice {
+	if voice == nil {
+		return nil
+	}
+
+	return &app.Voice{
+		FileID: voice.FileID,
+	}
+}
+
 func (api *botAPI) preparePhotos(message app.Message) []interface{} {
 	photo := tgbotapi.NewInputMediaPhoto(tgbotapi.FileID(message.Image.FileID))
 	photo.Caption = message.Text
@@ -183,6 +233,17 @@ func (api *botAPI) preparePhotos(message app.Message) []interface{} {
 	photos = append(photos, photo)
 
 	return photos
+}
+
+func (api *botAPI) prepareAudio(message app.Message) []interface{} {
+	audio := tgbotapi.NewInputMediaAudio(tgbotapi.FileID(message.Audio.FileID))
+	audio.Caption = message.Text
+
+	if message.UseMarkdown {
+		audio.ParseMode = tgbotapi.ModeMarkdown
+	}
+
+	return []interface{}{audio}
 }
 
 func (api *botAPI) prepareVideo(message app.Message) []interface{} {

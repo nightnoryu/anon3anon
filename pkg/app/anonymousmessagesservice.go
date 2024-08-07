@@ -54,7 +54,9 @@ func (s *anonymousMessagesService) ServeMessages() error {
 		err := s.api.SendMessageToOwner(Message{
 			Text:  notificationText,
 			Image: update.Message.Image,
+			Audio: update.Message.Audio,
 			Video: update.Message.Video,
+			Voice: update.Message.Voice,
 		})
 		if err != nil {
 			s.errorsChan <- err

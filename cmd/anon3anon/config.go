@@ -15,5 +15,5 @@ func parseEnv() (*config, error) {
 
 type config struct {
 	TelegramBotToken string `envconfig:"telegram_bot_token"`
-	OwnerChatID      int64  `envconfig:"owner_chat_id"`
+	OwnerChatID      int    `envconfig:"owner_chat_id"`
 }

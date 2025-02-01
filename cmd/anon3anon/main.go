@@ -1,38 +1,70 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/nightnoryu/anon3anon/pkg/app"
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
 	conf, err := parseEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(conf.TelegramBotToken)
-	if err != nil {
-		log.Panic(err)
+	opts := []bot.Option{
+		bot.WithDebug(),
+		bot.WithMessageTextHandler("/start", bot.MatchTypeExact, getStartHandler()),
+		bot.WithDefaultHandler(getDefaultHandler(conf)),
 	}
-	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	errorsChan := make(chan error)
-	botAPI := infrastructure.NewBotAPI(bot, conf.OwnerChatID)
-
-	commandHandler := app.NewCommandHandler(botAPI)
-
-	service := app.NewAnonymousQuestionsService(errorsChan, commandHandler, botAPI)
-	go func() {
-		for err := range errorsChan {
-			log.Println(err)
-		}
-	}()
-
-	if err = service.ServeMessages(); err != nil {
+	b, err := bot.New(conf.TelegramBotToken, opts...)
+	if err != nil {
 		log.Fatal(err)
+	}
+
+	b.Start(ctx)
+}
+
+func getStartHandler() bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		params := &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Жду твоих сообщений!!\nОтветы будут в канале @meme_me_a_meme",
+		}
+		_, err := b.SendMessage(ctx, params)
+		if err != nil {
+			log.Print(err)
+		}
+	}
+}
+
+func getDefaultHandler(conf *config) bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		params := &bot.CopyMessageParams{
+			ChatID:     conf.OwnerChatID,
+			FromChatID: update.Message.Chat.ID,
+			MessageID:  update.Message.ID,
+		}
+		_, err := b.CopyMessage(ctx, params)
+		if err != nil {
+			log.Print(err)
+		}
+
+		sendParams := &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Сообщение отправлено!",
+		}
+		_, err = b.SendMessage(ctx, sendParams)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 }

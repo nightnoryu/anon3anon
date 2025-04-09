@@ -23,6 +23,10 @@ func GetStartCommandHandler(logger *logrus.Logger) bot.HandlerFunc {
 
 func GetAnonymousMessagesHandler(logger *logrus.Logger, ownerChatId int) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		if update.Message == nil {
+			return
+		}
+
 		params := &bot.CopyMessageParams{
 			ChatID:     ownerChatId,
 			FromChatID: update.Message.Chat.ID,

@@ -1,5 +1,0 @@
-bin
-docker
-docker-compose.yml
-Makefile
-*.env

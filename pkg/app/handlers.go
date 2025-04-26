@@ -12,7 +12,7 @@ func GetStartCommandHandler(logger *logrus.Logger) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		params := &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "Жду твоих сообщений!!\nОтветы будут в канале @meme_me_a_meme",
+			Text:   "Жду твоих сообщений!!",
 		}
 		_, err := b.SendMessage(ctx, params)
 		if err != nil {
@@ -40,7 +40,7 @@ func GetAnonymousMessagesHandler(logger *logrus.Logger, ownerChatId int) bot.Han
 
 		sendParams := &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "Сообщение отправлено!",
+			Text:   "Сообщение отправлено!!",
 		}
 		_, err = b.SendMessage(ctx, sendParams)
 		if err != nil {

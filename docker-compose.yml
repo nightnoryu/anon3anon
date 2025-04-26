@@ -6,4 +6,3 @@ services:
       dockerfile: docker/Dockerfile-local
     volumes:
       - "./bin:/app/bin"
-    env_file: .env

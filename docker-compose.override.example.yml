@@ -1,0 +1,5 @@
+services:
+  anon3anon:
+    environment:
+      TELEGRAM_BOT_TOKEN: 123:ABC
+      OWNER_CHAT_ID: 123

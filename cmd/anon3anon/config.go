@@ -7,7 +7,7 @@ import (
 
 func parseEnv() (*config, error) {
 	c := new(config)
-	if err := envconfig.Process("", c); err != nil {
+	if err := envconfig.Process(appID, c); err != nil {
 		return nil, errors.Wrap(err, "failed to parse env")
 	}
 	return c, nil

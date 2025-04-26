@@ -1,5 +1,5 @@
 services:
   anon3anon:
     environment:
-      TELEGRAM_BOT_TOKEN: 123:ABC
-      OWNER_CHAT_ID: 123
+      ANON3ANON_TELEGRAM_BOT_TOKEN: 123:ABC
+      ANON3ANON_OWNER_CHAT_ID: 123

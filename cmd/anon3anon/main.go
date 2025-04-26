@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const appID = "anon3anon"
+
 func main() {
 	logger := initLogger()
 

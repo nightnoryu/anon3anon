@@ -34,7 +34,7 @@ services:
       OWNER_CHAT_ID: 123 # ID of your chat with your bot
 ```
 
-And you're set! Use the provided `docker-compose` wrapper script to manage the application:
+And you're set! Use the provided `docker compose` wrapper script to manage the application:
 
 ```shell
 # Start

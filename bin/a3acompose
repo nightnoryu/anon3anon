@@ -7,6 +7,6 @@ PROJECT_NAME=$(basename "$WORK_DIR")
 
 pushd "$WORK_DIR" >/dev/null
 
-docker-compose -p "$PROJECT_NAME" "$@"
+docker compose -p "$PROJECT_NAME" "$@"
 
 popd >/dev/null

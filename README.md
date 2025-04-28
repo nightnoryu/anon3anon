@@ -10,16 +10,20 @@ Prerequisites:
 2. Git
 3. Docker
 
-Firstly, clone the repository:
+Firstly, clone the repository into your `$GOPATH`:
 
 ```shell
+mkdir -p $GOPATH/src/github.com/nightnoryu
+cd $GOPATH/src/github.com/nightnoryu
+
 git clone git@github.com:nightnoryu/anon3anon.git
+cd anon3anon
 ```
 
 Then build the binary:
 
 ```shell
-./bin/a3abrewkit build
+bin/a3abrewkit build
 ```
 
 This script will download a [brewkit build system](https://github.com/ispringtech/brewkit) binary and put it in the `bin` directory of the project.
@@ -38,11 +42,11 @@ And you're set! Use the provided `docker compose` wrapper script to manage the a
 
 ```shell
 # Start
-./bin/a3acompose up -d
+bin/a3acompose up -d
 
 # Restart to apply changes
 docker restart anon3anon
 
 # Stop
-./bin/a3acompose down
+bin/a3acompose down
 ```

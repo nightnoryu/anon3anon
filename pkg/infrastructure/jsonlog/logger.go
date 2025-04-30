@@ -14,6 +14,8 @@ var fieldMap = logrus.FieldMap{
 }
 
 type Logger interface {
+	WithField(key string, value interface{}) Logger
+
 	Info(...interface{})
 	Error(error, ...interface{})
 	FatalError(error, ...interface{})
@@ -38,6 +40,10 @@ func NewLogger(config *Config) Logger {
 
 type logger struct {
 	logrus.FieldLogger
+}
+
+func (l *logger) WithField(key string, value interface{}) Logger {
+	return &logger{l.FieldLogger.WithField(key, value)}
 }
 
 func (l *logger) Error(err error, args ...interface{}) {

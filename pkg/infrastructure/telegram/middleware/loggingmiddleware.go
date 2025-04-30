@@ -10,16 +10,29 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
+const (
+	chatIDField   = "chat_id"
+	usernameField = "username"
+)
+
 func NewLoggingMiddleware(logger jsonlog.Logger) bot.Middleware {
 	return func(next bot.HandlerFunc) bot.HandlerFunc {
 		return func(ctx context.Context, bot *bot.Bot, update *models.Update) {
-			if update.Message != nil {
-				text := update.Message.Text
-				if len(update.Message.Caption) > 0 {
-					text = update.Message.Caption
-				}
-				logger.Info(fmt.Sprintf("message from %s: %s", update.Message.From.Username, text))
+			if update.Message == nil {
+				return
 			}
+
+			chatLogger := logger.
+				WithField(chatIDField, update.Message.Chat.ID).
+				WithField(usernameField, update.Message.From.Username)
+
+			text := update.Message.Text
+			if len(update.Message.Caption) > 0 {
+				text = update.Message.Caption
+			}
+
+			chatLogger.Info(fmt.Sprintf("new message: %s", text))
+
 			next(ctx, bot, update)
 		}
 	}

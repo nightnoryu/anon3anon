@@ -1,27 +1,15 @@
-package app
+package handler
 
 import (
 	"context"
 
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
+
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-	"github.com/sirupsen/logrus"
 )
 
-func GetStartCommandHandler(logger *logrus.Logger) bot.HandlerFunc {
-	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		params := &bot.SendMessageParams{
-			ChatID: update.Message.Chat.ID,
-			Text:   "Жду твоих сообщений!!",
-		}
-		_, err := b.SendMessage(ctx, params)
-		if err != nil {
-			logger.Error(err)
-		}
-	}
-}
-
-func GetAnonymousMessagesHandler(logger *logrus.Logger, ownerChatId int) bot.HandlerFunc {
+func NewAnonymousMessagesHandler(logger jsonlog.Logger, ownerChatId int) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		if update.Message == nil {
 			return

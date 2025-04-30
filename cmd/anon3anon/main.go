@@ -5,10 +5,11 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/nightnoryu/anon3anon/pkg/app"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/handler"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/middleware"
 
 	"github.com/go-telegram/bot"
-	"github.com/sirupsen/logrus"
 )
 
 const appID = "anon3anon"
@@ -18,18 +19,18 @@ func main() {
 
 	conf, err := parseEnv()
 	if err != nil {
-		logger.Fatal(err)
+		logger.FatalError(err)
 	}
 
 	opts := []bot.Option{
-		bot.WithDebug(),
-		bot.WithMessageTextHandler("/start", bot.MatchTypeExact, app.GetStartCommandHandler(logger)),
-		bot.WithDefaultHandler(app.GetAnonymousMessagesHandler(logger, conf.OwnerChatID)),
+		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
+		bot.WithMessageTextHandler("/start", bot.MatchTypeExact, handler.NewStartCommandHandler(logger)),
+		bot.WithDefaultHandler(handler.NewAnonymousMessagesHandler(logger, conf.OwnerChatID)),
 	}
 
 	b, err := bot.New(conf.TelegramBotToken, opts...)
 	if err != nil {
-		logger.Fatal(err)
+		logger.FatalError(err)
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -38,10 +39,10 @@ func main() {
 	b.Start(ctx)
 }
 
-func initLogger() *logrus.Logger {
-	logger := logrus.New()
-	logger.SetOutput(os.Stdout)
-	logger.SetFormatter(&logrus.JSONFormatter{})
-	logger.SetLevel(logrus.WarnLevel)
+func initLogger() jsonlog.Logger {
+	logger := jsonlog.NewLogger(&jsonlog.Config{
+		AppName: appID,
+		Level:   jsonlog.InfoLevel,
+	})
 	return logger
 }

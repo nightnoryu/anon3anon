@@ -2,6 +2,10 @@
 
 Telegram bot for anonymous messages 🎭✨
 
+---
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/nightnoryu/anon3anon)](https://goreportcard.com/report/github.com/nightnoryu/anon3anon)
+
 ## Building for local development
 
 Prerequisites:

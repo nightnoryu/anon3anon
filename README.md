@@ -39,8 +39,8 @@ After that, copy the `docker-compose.override.example.yml` to `docker-compose.ov
 services:
   anon3anon:
     environment:
-      TELEGRAM_BOT_TOKEN: 123:ABC # The token for your bot, obtained from t.me/BotFather
-      OWNER_CHAT_ID: 123 # ID of your chat with your bot
+      ANON3ANON_TELEGRAM_BOT_TOKEN: 123:ABC # The token for your bot, obtained from t.me/BotFather
+      ANON3ANON_OWNER_CHAT_ID: 123 # ID of your chat with your bot
 ```
 
 And you're set! Use `docker compose` to manage the application:

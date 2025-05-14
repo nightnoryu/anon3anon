@@ -13,24 +13,25 @@ Prerequisites:
 1. Linux
 2. Git
 3. Docker
+4. (optional) [BrewKit](https://github.com/ispringtech/brewkit)
 
 Firstly, clone the repository into your `$GOPATH`:
 
 ```shell
 mkdir -p $GOPATH/src/github.com/nightnoryu
 cd $GOPATH/src/github.com/nightnoryu
-
 git clone git@github.com:nightnoryu/anon3anon.git
 cd anon3anon
 ```
 
-Then build the binary:
+Then build the project:
 
 ```shell
-bin/a3abrewkit build
-```
+brewkit build
 
-This script will download a [brewkit build system](https://github.com/ispringtech/brewkit) binary and put it in the `bin` directory of the project.
+# Alternatively, if you don't want to use BrewKit, you can do it the old-fashioned way:
+# go build -o ./bin/anon3anon ./cmd/anon3anon
+```
 
 After that, copy the `docker-compose.override.example.yml` to `docker-compose.override.yml` and set the environment variables:
 
@@ -42,15 +43,15 @@ services:
       OWNER_CHAT_ID: 123 # ID of your chat with your bot
 ```
 
-And you're set! Use the provided `docker compose` wrapper script to manage the application:
+And you're set! Use `docker compose` to manage the application:
 
 ```shell
 # Start
-bin/a3acompose up -d
+docker compose up -d
 
 # Restart to apply changes
 docker restart anon3anon
 
 # Stop
-bin/a3acompose down
+docker compose down
 ```

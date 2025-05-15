@@ -2,9 +2,12 @@
 
 Telegram bot for anonymous messages 🎭✨
 
+Currently deployed and working at https://t.me/meme_me_a_meme_bot for my channel.
+
 ---
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/nightnoryu/anon3anon)](https://goreportcard.com/report/github.com/nightnoryu/anon3anon)
+[![GitHub License](https://img.shields.io/github/license/nightnoryu/anon3anon)](https://opensource.org/license/MIT)
 
 ## Building for local development
 

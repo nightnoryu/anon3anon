@@ -1,14 +1,15 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/kelseyhightower/envconfig"
-	"github.com/pkg/errors"
 )
 
 func parseEnv() (*config, error) {
 	c := new(config)
 	if err := envconfig.Process(appID, c); err != nil {
-		return nil, errors.Wrap(err, "failed to parse env")
+		return nil, fmt.Errorf("failed to parse env: %w", err)
 	}
 	return c, nil
 }

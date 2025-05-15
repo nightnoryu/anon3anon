@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/handler"
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/middleware"
+	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/telegram/handler"
+	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/telegram/middleware"
 
 	"github.com/go-telegram/bot"
 )
@@ -22,13 +22,8 @@ func main() {
 		logger.FatalError(err)
 	}
 
-	opts := []bot.Option{
-		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
-		bot.WithMessageTextHandler("/start", bot.MatchTypeExact, handler.NewStartCommandHandler(logger)),
-		bot.WithDefaultHandler(handler.NewAnonymousMessagesHandler(logger, conf.OwnerChatID)),
-	}
-
-	b, err := bot.New(conf.TelegramBotToken, opts...)
+	options := initBotOptions(conf, logger)
+	b, err := bot.New(conf.TelegramBotToken, options...)
 	if err != nil {
 		logger.FatalError(err)
 	}
@@ -45,4 +40,15 @@ func initLogger() jsonlog.Logger {
 		Level:   jsonlog.InfoLevel,
 	})
 	return logger
+}
+
+func initBotOptions(conf *config, logger jsonlog.Logger) []bot.Option {
+	startCommandHandler := handler.NewStartCommandHandler(logger)
+	anonymousMessagesHandler := handler.NewAnonymousMessagesHandler(logger, conf.OwnerChatID)
+
+	return []bot.Option{
+		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
+		bot.WithMessageTextHandler("/start", bot.MatchTypeExact, startCommandHandler),
+		bot.WithDefaultHandler(anonymousMessagesHandler),
+	}
 }

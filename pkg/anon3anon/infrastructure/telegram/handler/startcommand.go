@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/jsonlog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -11,9 +11,13 @@ import (
 
 func NewStartCommandHandler(logger jsonlog.Logger) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		if update.Message == nil {
+			return
+		}
+
 		params := &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "Жду твоих сообщений!!",
+			Text:   greetingMessage,
 		}
 		_, err := b.SendMessage(ctx, params)
 		if err != nil {

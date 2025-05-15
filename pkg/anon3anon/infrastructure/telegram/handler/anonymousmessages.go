@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/jsonlog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -28,7 +28,7 @@ func NewAnonymousMessagesHandler(logger jsonlog.Logger, ownerChatId int) bot.Han
 
 		sendParams := &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "Сообщение отправлено!!",
+			Text:   messageSentMessage,
 		}
 		_, err = b.SendMessage(ctx, sendParams)
 		if err != nil {

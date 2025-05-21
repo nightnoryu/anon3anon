@@ -7,12 +7,12 @@ Telegram bot for anonymous messages 🎭✨
 
 Currently deployed and working at https://t.me/meme_me_a_meme_bot for my channel.
 
-## Building for local development
+## Local developemnt
 
 Prerequisites:
 
-1. Linux
-2. Git
+1. Git
+2. Go 1.24+
 3. Docker
 4. (optional) [BrewKit](https://github.com/ispringtech/brewkit)
 

@@ -48,7 +48,7 @@ func initBotOptions(conf *config, logger jsonlog.Logger) []bot.Option {
 
 	return []bot.Option{
 		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
-		bot.WithMessageTextHandler("/start", bot.MatchTypeExact, startCommandHandler),
+		bot.WithMessageTextHandler("start", bot.MatchTypeCommand, startCommandHandler),
 		bot.WithDefaultHandler(anonymousMessagesHandler),
 	}
 }

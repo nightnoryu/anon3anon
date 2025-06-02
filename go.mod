@@ -3,7 +3,7 @@ module github.com/nightnoryu/anon3anon
 go 1.24
 
 require (
-	github.com/go-telegram/bot v1.13.3
+	github.com/go-telegram/bot v1.15.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 )

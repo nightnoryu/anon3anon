@@ -1,4 +1,4 @@
-local project = import 'brewkit/project.libsonnet';
+local project = import 'bkit/project.libsonnet';
 
 local appIDs = [
     "anon3anon",

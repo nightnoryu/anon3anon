@@ -18,10 +18,10 @@ local gocache = [
 
 {
     project(appIDs):: {
-        apiVersion: "brewkit/v1",
+        apiVersion: "bkit/v1",
 
         targets: {
-            all: ["modules", "build"],
+            all: ["modules", "build", "check"],
         } + {
             modules: ["gotidy", "modulesvendor"],
 
@@ -62,6 +62,30 @@ local gocache = [
                 }
             }
             for appID in appIDs
+        } + {
+            check: ["test", "lint"],
+
+            test: {
+                from: "gobase",
+                workdir: "/app",
+                cache: gocache,
+                command: "go test ./..."
+            },
+
+            lint: {
+                from: images.golangcilint,
+                workdir: "/app",
+                cache: gocache,
+                copy: [
+                    copyFrom("gosources", "/app", "/app"),
+                    copy(".golangci.yml", ".golangci.yml"),
+                ],
+                env: {
+                    GOCACHE: "/app/cache/go-build",
+                    GOLANGCI_LINT_CACHE: "/app/cache/go-build",
+                },
+                command: "golangci-lint run"
+            },
         } + {
             gobase: {
                 from: images.gobuilder,

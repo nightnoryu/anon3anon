@@ -14,11 +14,11 @@ var fieldMap = logrus.FieldMap{
 }
 
 type Logger interface {
-	WithField(key string, value interface{}) Logger
+	WithField(key string, value any) Logger
 
-	Info(...interface{})
-	Error(error, ...interface{})
-	FatalError(error, ...interface{})
+	Info(...any)
+	Error(error, ...any)
+	FatalError(error, ...any)
 }
 
 type Config struct {
@@ -42,14 +42,14 @@ type logger struct {
 	logrus.FieldLogger
 }
 
-func (l *logger) WithField(key string, value interface{}) Logger {
+func (l *logger) WithField(key string, value any) Logger {
 	return &logger{l.FieldLogger.WithField(key, value)}
 }
 
-func (l *logger) Error(err error, args ...interface{}) {
-	l.FieldLogger.WithError(err).Error(args)
+func (l *logger) Error(err error, args ...any) {
+	l.FieldLogger.WithError(err).Error(args...)
 }
 
-func (l *logger) FatalError(err error, args ...interface{}) {
+func (l *logger) FatalError(err error, args ...any) {
 	l.FieldLogger.WithError(err).Fatal(args...)
 }

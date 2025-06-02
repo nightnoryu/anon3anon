@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"

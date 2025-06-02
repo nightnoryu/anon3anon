@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/jsonlog"
-	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/telegram/handler"
-	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/telegram/middleware"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/handler"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/middleware"
 
 	"github.com/go-telegram/bot"
 )

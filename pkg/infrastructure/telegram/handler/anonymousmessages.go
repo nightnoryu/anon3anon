@@ -2,8 +2,9 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/nightnoryu/anon3anon/pkg/anon3anon/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -12,6 +13,11 @@ import (
 func NewAnonymousMessagesHandler(logger jsonlog.Logger, ownerChatId int) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		if update.Message == nil {
+			return
+		}
+
+		if ownerChatId == 0 {
+			logger.Info(fmt.Sprintf("owner chat ID not set. set to %d to use the last chat", update.Message.Chat.ID))
 			return
 		}
 

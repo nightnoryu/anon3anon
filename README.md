@@ -9,15 +9,15 @@ Currently running at https://t.me/meme_me_a_meme_bot for my channel.
 Prerequisites:
 
 1. Git
-2. Go 1.24+
-3. Docker
-4. (optional) [BrewKit](https://github.com/ispringtech/brewkit)
+2. Docker
+3. [bkit](https://github.com/nightnoryu/bkit)
 
 Firstly, clone the repository into your `$GOPATH`:
 
 ```shell
 mkdir -p $GOPATH/src/github.com/nightnoryu
 cd $GOPATH/src/github.com/nightnoryu
+
 git clone git@github.com:nightnoryu/anon3anon.git
 cd anon3anon
 ```
@@ -25,10 +25,7 @@ cd anon3anon
 Then build the project:
 
 ```shell
-brewkit build
-
-# Alternatively, if you don't want to use BrewKit, you can do it the old-fashioned way:
-# go build -o ./bin/anon3anon ./cmd/anon3anon
+bkit build
 ```
 
 After that, copy the `docker-compose.override.example.yml` to `docker-compose.override.yml` and set the environment variables:
@@ -40,6 +37,9 @@ services:
       ANON3ANON_TELEGRAM_BOT_TOKEN: 123:ABC # The token for your bot, obtained from t.me/BotFather
       ANON3ANON_OWNER_CHAT_ID: 123 # ID of your chat with your bot
 ```
+
+> [!NOTE]
+> When launching the bot for the first time, leave `ANON3ANON_OWNER_CHAT_ID` empty and write a message to the bot. It will print the chat ID in the logs and after that you can set it up.
 
 And you're set! Use `docker compose` to manage the application:
 

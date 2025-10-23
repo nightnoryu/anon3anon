@@ -18,7 +18,7 @@ local gocache = [
 
 {
     project(appIDs):: {
-        apiVersion: "bkit/v1",
+        apiVersion: "brewkit/v1",
 
         targets: {
             all: ["modules", "build", "check"],

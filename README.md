@@ -10,14 +10,11 @@ Prerequisites:
 
 1. Git
 2. Docker
-3. [bkit](https://github.com/nightnoryu/bkit)
+3. [brewkit](https://github.com/ispringtech/brewkit)
 
-Firstly, clone the repository into your `$GOPATH`:
+Clone the repository:
 
 ```shell
-mkdir -p $GOPATH/src/github.com/nightnoryu
-cd $GOPATH/src/github.com/nightnoryu
-
 git clone git@github.com:nightnoryu/anon3anon.git
 cd anon3anon
 ```
@@ -25,7 +22,7 @@ cd anon3anon
 Then build the project:
 
 ```shell
-bkit build
+brewkit build
 ```
 
 After that, copy the `docker-compose.override.example.yml` to `docker-compose.override.yml` and set the environment variables:

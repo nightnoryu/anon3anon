@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - '**/*.go'
-      - 'go.*'
 
 permissions:
   contents: read

@@ -27,7 +27,7 @@ func NewLoggingMiddleware(logger jsonlog.Logger) bot.Middleware {
 				WithField(usernameField, update.Message.From.Username)
 
 			text := update.Message.Text
-			if len(update.Message.Caption) > 0 {
+			if update.Message.Caption != "" {
 				text = update.Message.Caption
 			}
 

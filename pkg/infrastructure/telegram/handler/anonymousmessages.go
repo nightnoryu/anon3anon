@@ -10,19 +10,19 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func NewAnonymousMessagesHandler(logger jsonlog.Logger, ownerChatId int) bot.HandlerFunc {
+func NewAnonymousMessagesHandler(logger jsonlog.Logger, ownerChatID int) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		if update.Message == nil {
 			return
 		}
 
-		if ownerChatId == 0 {
+		if ownerChatID == 0 {
 			logger.Info(fmt.Sprintf("owner chat ID not set. set to %d to use the last chat", update.Message.Chat.ID))
 			return
 		}
 
 		params := &bot.CopyMessageParams{
-			ChatID:     ownerChatId,
+			ChatID:     ownerChatID,
 			FromChatID: update.Message.Chat.ID,
 			MessageID:  update.Message.ID,
 		}

@@ -1,8 +1,6 @@
-# :performing_arts: anon3anon [![Github release](https://img.shields.io/github/release/nightnoryu/anon3anon.svg)](https://github.com/nightnoryu/anon3anon/releases) [![Build Status](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml/badge.svg)](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/nightnoryu/anon3anon)](https://goreportcard.com/report/github.com/nightnoryu/anon3anon)
+# anon3anon [![Github release](https://img.shields.io/github/release/nightnoryu/anon3anon.svg)](https://github.com/nightnoryu/anon3anon/releases) [![Build Status](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml/badge.svg)](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/nightnoryu/anon3anon)](https://goreportcard.com/report/github.com/nightnoryu/anon3anon)
 
 Telegram bot for anonymous messages.
-
-Currently running at https://t.me/meme_me_a_meme_bot for my channel.
 
 ## Local development
 

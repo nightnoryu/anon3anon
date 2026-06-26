@@ -6,21 +6,14 @@ Telegram bot for anonymous messages.
 
 Prerequisites:
 
-1. Git
-2. Docker
-3. [brewkit](https://github.com/ispringtech/brewkit)
+1. mise
+2. docker
+3. docker compose
 
-Clone the repository:
-
-```shell
-git clone git@github.com:nightnoryu/anon3anon.git
-cd anon3anon
-```
-
-Then build the project:
+Build the project with mise:
 
 ```shell
-brewkit build
+mise run
 ```
 
 After that, copy the `docker-compose.override.example.yml` to `docker-compose.override.yml` and set the environment variables:

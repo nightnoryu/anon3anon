@@ -1,0 +1,19 @@
+[tools]
+go = "1.25"
+golangci-lint = "2.4.0"
+
+[tasks.default]
+run = [
+    { task = "modules" },
+    { task = "build" },
+    { task = "lint" },
+]
+
+[tasks.modules]
+run = "go mod tidy"
+
+[tasks.build]
+run = "go build -trimpath -v -o ./bin/anon3anon ./cmd/anon3anon"
+
+[tasks.lint]
+run = "golangci-lint run"

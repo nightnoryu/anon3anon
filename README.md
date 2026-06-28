@@ -1,4 +1,4 @@
-# anon3anon [![Github release](https://img.shields.io/github/release/nightnoryu/anon3anon.svg)](https://github.com/nightnoryu/anon3anon/releases) [![Build Status](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml/badge.svg)](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/nightnoryu/anon3anon)](https://goreportcard.com/report/github.com/nightnoryu/anon3anon)
+# anon3anon [![Build Status](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml/badge.svg)](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml)
 
 Telegram bot for anonymous messages.
 
@@ -16,7 +16,7 @@ Build the project with mise:
 mise run
 ```
 
-After that, copy the `docker-compose.override.example.yml` to `docker-compose.override.yml` and set the environment variables:
+After that, copy the `compose.override.example.yml` to `compose.override.yml` and set the environment variables:
 
 ```yaml
 services:

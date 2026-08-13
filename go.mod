@@ -1,6 +1,6 @@
 module github.com/nightnoryu/anon3anon
 
-go 1.25
+go 1.26
 
 require (
 	github.com/go-telegram/bot v1.15.0

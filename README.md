@@ -1,4 +1,4 @@
-# anon3anon [![Build Status](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml/badge.svg)](https://github.com/nightnoryu/anon3anon/actions/workflows/check-go.yml)
+# anon3anon
 
 Telegram bot for anonymous messages.
 
@@ -35,7 +35,8 @@ And you're set! Use `docker compose` to manage the application:
 # Start
 docker compose up -d
 
-# Restart to apply changes
+# Build & restart to apply changes
+mise run
 docker restart anon3anon
 
 # Stop

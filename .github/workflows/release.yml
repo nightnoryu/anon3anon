@@ -2,7 +2,11 @@ name: Release Docker Image
 
 on:
   push:
-    tags: [ 'v*' ]
+    tags: [ 'v*.*.*' ]
+
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
@@ -17,6 +21,9 @@ jobs:
 
       - name: Setup mise
         uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -40,7 +47,7 @@ jobs:
       - name: Run build and produce the binary
         run: mise run
 
-      - name: Build and Push Docker Image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .

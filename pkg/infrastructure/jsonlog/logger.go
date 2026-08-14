@@ -1,55 +1,49 @@
 package jsonlog
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
 )
 
 const appNameKey = "app_name"
 
-var fieldMap = logrus.FieldMap{
-	logrus.FieldKeyTime: "@timestamp",
-	logrus.FieldKeyMsg:  "message",
+type logger struct {
+	*zap.Logger
 }
 
-type Logger interface {
-	WithField(key string, value any) Logger
-
-	Info(...any)
-	Error(error, ...any)
-	FatalError(error, ...any)
-}
-
-type Config struct {
-	AppName string
-	Level   Level
-}
-
-func NewLogger(config *Config) Logger {
-	impl := logrus.New()
-	impl.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: time.RFC3339Nano,
-		FieldMap:        fieldMap,
-	})
-	impl.SetLevel(logrus.Level(config.Level))
+func NewLogger(config *Config) log.MainLogger {
+	implConfig := zap.NewProductionConfig()
+	implConfig.Level = zap.NewAtomicLevelAt(zapcore.Level(config.Level))
+	impl := zap.Must(implConfig.Build())
 	return &logger{
-		FieldLogger: impl.WithField(appNameKey, config.AppName),
+		Logger: impl.With(zap.String(appNameKey, config.AppName)),
 	}
 }
 
-type logger struct {
-	logrus.FieldLogger
+func (l *logger) WithFields(fields log.Fields) log.Logger {
+	implFields := make([]zap.Field, 0, len(fields))
+	for key, value := range fields {
+		implFields = append(implFields, zap.Any(key, value))
+	}
+	return &logger{l.With(implFields...)}
 }
 
-func (l *logger) WithField(key string, value any) Logger {
-	return &logger{l.FieldLogger.WithField(key, value)}
+func (l *logger) Debug(args ...any) {
+	l.Logger.Debug(fmt.Sprint(args...))
+}
+
+func (l *logger) Info(args ...any) {
+	l.Logger.Info(fmt.Sprint(args...))
 }
 
 func (l *logger) Error(err error, args ...any) {
-	l.FieldLogger.WithError(err).Error(args...)
+	l.With(zap.Error(err)).Error(fmt.Sprint(args...))
 }
 
 func (l *logger) FatalError(err error, args ...any) {
-	l.FieldLogger.WithError(err).Fatal(args...)
+	l.With(zap.Error(err)).Fatal(fmt.Sprint(args...))
 }

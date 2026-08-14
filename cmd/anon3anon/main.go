@@ -5,11 +5,12 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/go-telegram/bot"
+
 	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
 	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/handler"
 	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/middleware"
-
-	"github.com/go-telegram/bot"
 )
 
 const appID = "anon3anon"
@@ -34,7 +35,7 @@ func main() {
 	b.Start(ctx)
 }
 
-func initLogger() jsonlog.Logger {
+func initLogger() log.MainLogger {
 	logger := jsonlog.NewLogger(&jsonlog.Config{
 		AppName: appID,
 		Level:   jsonlog.InfoLevel,
@@ -42,7 +43,7 @@ func initLogger() jsonlog.Logger {
 	return logger
 }
 
-func initBotOptions(conf *config, logger jsonlog.Logger) []bot.Option {
+func initBotOptions(conf *config, logger log.Logger) []bot.Option {
 	startCommandHandler := handler.NewStartCommandHandler(logger)
 	anonymousMessagesHandler := handler.NewAnonymousMessagesHandler(logger, conf.OwnerChatID)
 

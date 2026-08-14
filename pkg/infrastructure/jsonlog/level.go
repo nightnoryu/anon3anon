@@ -1,13 +1,13 @@
 package jsonlog
 
-import "github.com/sirupsen/logrus"
+import "go.uber.org/zap/zapcore"
 
-type Level logrus.Level
+type Level zapcore.Level
 
 const (
-	FatalLevel = Level(logrus.FatalLevel)
-	ErrorLevel = Level(logrus.ErrorLevel)
-	WarnLevel  = Level(logrus.WarnLevel)
-	InfoLevel  = Level(logrus.InfoLevel)
-	DebugLevel = Level(logrus.DebugLevel)
+	FatalLevel = Level(zapcore.FatalLevel)
+	ErrorLevel = Level(zapcore.ErrorLevel)
+	WarnLevel  = Level(zapcore.WarnLevel)
+	InfoLevel  = Level(zapcore.InfoLevel)
+	DebugLevel = Level(zapcore.DebugLevel)
 )

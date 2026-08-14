@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
-
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
 )
 
-func NewAnonymousMessagesHandler(logger jsonlog.Logger, ownerChatID int) bot.HandlerFunc {
+func NewAnonymousMessagesHandler(logger log.Logger, ownerChatID int) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
 		if update.Message == nil {
 			return

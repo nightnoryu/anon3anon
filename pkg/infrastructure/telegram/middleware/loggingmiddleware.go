@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
-
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+
+	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
 )
 
 const (
@@ -15,16 +15,17 @@ const (
 	usernameField = "username"
 )
 
-func NewLoggingMiddleware(logger jsonlog.Logger) bot.Middleware {
+func NewLoggingMiddleware(logger log.Logger) bot.Middleware {
 	return func(next bot.HandlerFunc) bot.HandlerFunc {
 		return func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			if update.Message == nil {
 				return
 			}
 
-			chatLogger := logger.
-				WithField(chatIDField, update.Message.Chat.ID).
-				WithField(usernameField, update.Message.From.Username)
+			chatLogger := logger.WithFields(log.Fields{
+				chatIDField:   update.Message.Chat.ID,
+				usernameField: update.Message.Chat.Username,
+			})
 
 			text := update.Message.Text
 			if update.Message.Caption != "" {

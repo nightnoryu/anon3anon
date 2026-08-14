@@ -61,6 +61,19 @@ formatters:
   enable:
     - gofmt
     - goimports
+    - gci
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/nightnoryu/anon3anon
+
+    gci:
+      custom-order: true
+      sections:
+        - standard
+        - default
+        - prefix(github.com/nightnoryu/anon3anon/)
 
   exclusions:
     generated: lax

@@ -1,5 +1,8 @@
 # anon3anon
 
+[![Docker image](https://img.shields.io/badge/docker-ghcr.io%2Fnightnoryu%2Fanon3anon-blue.svg)](https://github.com/nightnoryu/anon3anon/pkgs/container/anon3anon)
+![GitHub Tag](https://img.shields.io/github/v/tag/nightnoryu/anon3anon?color=green)
+
 Telegram bot for anonymous messages.
 
 ## Self-hosting

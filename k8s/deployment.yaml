@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anon3anon
+  namespace: anon3anon
+  labels:
+    app: anon3anon
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: anon3anon
+  template:
+    metadata:
+      labels:
+        app: anon3anon
+    spec:
+      containers:
+        - name: anon3anon
+          image: ghcr.io/nightnoryu/anon3anon:latest
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: anon3anon-secrets
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi

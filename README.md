@@ -45,6 +45,9 @@ Manifests live in `k8s/`. Copy `k8s/secret.example.yaml` to `k8s/secret.yaml` an
 ID, then apply:
 
 ```shell
+cp k8s/secret.example.yaml k8s/secret.yaml
+
+# Edit the secrets and then apply
 kubectl apply -k k8s/
 ```
 

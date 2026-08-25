@@ -1,0 +1,35 @@
+name: Apply Kubernetes Manifests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    environment: prod
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up kustomize
+        uses: imranismail/setup-kustomize@v3
+
+      - name: Set up ksops
+        run: |
+          curl -s https://raw.githubusercontent.com/viaduct-ai/kustomize-sops/master/scripts/install-ksops-archive.sh | bash
+
+      - name: Set up Kubernetes context
+        uses: azure/k8s-set-context@v5
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Apply manifests
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/anon3anon -n anon3anon --timeout=300s

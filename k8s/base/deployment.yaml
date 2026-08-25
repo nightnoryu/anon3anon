@@ -21,9 +21,42 @@ spec:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest
           imagePullPolicy: Always
-          envFrom:
-            - secretRef:
-                name: anon3anon-secrets
+          env:
+            - name: HTTP_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  name: anon3anon-config
+                  key: HTTP_PROXY
+            - name: HTTPS_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  name: anon3anon-config
+                  key: HTTPS_PROXY
+            - name: ALL_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  name: anon3anon-config
+                  key: ALL_PROXY
+            - name: ANON3ANON_TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: anon3anon-secrets
+                  key: ANON3ANON_TELEGRAM_BOT_TOKEN
+            - name: ANON3ANON_OWNER_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: anon3anon-secrets
+                  key: ANON3ANON_OWNER_CHAT_ID
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+        - name: warp-proxy
+          image: seiry/cloudflare-warp-proxy:latest
+          imagePullPolicy: Always
           resources:
             requests:
               cpu: 10m

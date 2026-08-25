@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anon3anon-config
+data:
+  HTTP_PROXY: "http://warp-proxy:40000"
+  HTTPS_PROXY: "http://warp-proxy:40000"
+  ALL_PROXY: "socks5h://warp-proxy:40000"

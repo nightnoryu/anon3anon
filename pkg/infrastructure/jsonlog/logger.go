@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
+	"anon3anon/pkg/infrastructure/log"
 )
 
 const appNameKey = "app_name"

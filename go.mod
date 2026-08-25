@@ -1,4 +1,4 @@
-module github.com/nightnoryu/anon3anon
+module anon3anon
 
 go 1.26
 

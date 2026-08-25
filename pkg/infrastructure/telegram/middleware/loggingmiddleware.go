@@ -7,7 +7,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
+	"anon3anon/pkg/infrastructure/log"
 )
 
 const (

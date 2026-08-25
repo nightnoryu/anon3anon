@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-telegram/bot"
 
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/jsonlog"
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/log"
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/handler"
-	"github.com/nightnoryu/anon3anon/pkg/infrastructure/telegram/middleware"
+	"anon3anon/pkg/infrastructure/jsonlog"
+	"anon3anon/pkg/infrastructure/log"
+	"anon3anon/pkg/infrastructure/telegram/handler"
+	"anon3anon/pkg/infrastructure/telegram/middleware"
 )
 
 const appID = "anon3anon"

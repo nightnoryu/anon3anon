@@ -32,6 +32,14 @@ linters:
     - nestif
     - copyloopvar
     - sqlclosecheck
+    - forbidigo
+    - errorlint
+    - nilerr
+    - exhaustive
+    - contextcheck
+    - testifylint
+    - forcetypeassert
+    - unparam
 
   settings:
     govet:
@@ -46,6 +54,11 @@ linters:
         - experimental
         - opinionated
 
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print.*$
+          msg: Do not commit print statements.
+
   exclusions:
     generated: lax
     presets:
@@ -56,6 +69,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - path: '_test\.go'
+        linters:
+          - goconst
 
 formatters:
   enable:
@@ -66,14 +83,14 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/nightnoryu/anon3anon
+        - anon3anon
 
     gci:
       custom-order: true
       sections:
         - standard
         - default
-        - prefix(github.com/nightnoryu/anon3anon/)
+        - prefix(anon3anon/)
 
   exclusions:
     generated: lax

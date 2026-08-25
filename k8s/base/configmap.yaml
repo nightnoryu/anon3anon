@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: anon3anon-config
 data:
-  HTTP_PROXY: "http://warp-proxy:40000"
-  HTTPS_PROXY: "http://warp-proxy:40000"
-  ALL_PROXY: "socks5h://warp-proxy:40000"
+  HTTP_PROXY: "http://localhost:40000"
+  HTTPS_PROXY: "http://localhost:40000"
+  ALL_PROXY: "socks5h://localhost:40000"

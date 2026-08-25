@@ -3,5 +3,6 @@ services:
     container_name: anon3anon
     build:
       context: .
+      dockerfile: Dockerfile
     volumes:
       - "./bin:/app/bin"

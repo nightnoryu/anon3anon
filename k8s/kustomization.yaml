@@ -5,3 +5,7 @@ resources:
   - namespace.yaml
   - secret.yaml
   - deployment.yaml
+
+images:
+  - name: ghcr.io/nightnoryu/anon3anon
+    newTag: 0.1.0

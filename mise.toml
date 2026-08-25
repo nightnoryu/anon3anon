@@ -21,10 +21,10 @@ run = "go mod tidy"
 run = "go build -trimpath -v --gcflags 'all=-N -l' -o ./bin/anon3anon ./cmd/anon3anon"
 
 [tasks.check]
-depends = [ "check:*" ]
+depends = [ "lint", "test:unit" ]
 
-[tasks."check:test"]
-run = "go test ./..."
-
-[tasks."check:lint"]
+[tasks.lint]
 run = "golangci-lint run"
+
+[tasks."test:unit"]
+run = "go test ./..."

@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: anon3anon-config
-data:
-  HTTP_PROXY: "http://localhost:40000"
-  HTTPS_PROXY: "http://localhost:40000"
-  ALL_PROXY: "socks5h://localhost:40000"

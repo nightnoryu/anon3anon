@@ -5,5 +5,4 @@ namespace: anon3anon
 
 resources:
   - namespace.yaml
-  - configmap.yaml
   - deployment.yaml

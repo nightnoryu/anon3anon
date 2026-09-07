@@ -11,6 +11,7 @@ Multi-tenant Telegram bot for anonymous messages. Available at [@anon3anon_bot](
 - Per-user personal links (`t.me/<bot>?start=<token>`), unguessable random tokens
 - Two-way, threaded anonymous conversations (reply to a message to answer)
 - `/mylink` to show your link again, `/revoke` to rotate it and kill the old one
+- `/block` as a reply to a delivered message to stop that anonymous sender for good
 
 ## 🚀 Hosting
 

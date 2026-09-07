@@ -30,4 +30,10 @@ type Store interface {
 	// current time bucket and reports whether the sender is still within the
 	// per-bucket quota for that recipient.
 	AllowMessage(ctx context.Context, senderID, recipientID int64) (bool, error)
+
+	// Block records that owner ownerUserID no longer wants to receive messages
+	// from the anonymous sender in senderChatID. It is idempotent.
+	Block(ctx context.Context, ownerUserID, senderChatID int64) error
+	// IsBlocked reports whether owner ownerUserID has blocked senderChatID.
+	IsBlocked(ctx context.Context, ownerUserID, senderChatID int64) (bool, error)
 }

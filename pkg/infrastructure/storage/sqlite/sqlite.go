@@ -243,6 +243,32 @@ func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (
 	return count <= s.rateMax, nil
 }
 
+func (s *Store) Block(ctx context.Context, ownerUserID, senderChatID int64) error {
+	if _, err := s.db.ExecContext(ctx,
+		`INSERT INTO blocks (owner_user_id, sender_chat_id, created_at) VALUES (?, ?, ?)
+		 ON CONFLICT (owner_user_id, sender_chat_id) DO NOTHING`,
+		ownerUserID, senderChatID, time.Now().UTC().Unix(),
+	); err != nil {
+		return fmt.Errorf("insert block: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) IsBlocked(ctx context.Context, ownerUserID, senderChatID int64) (bool, error) {
+	var one int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT 1 FROM blocks WHERE owner_user_id = ? AND sender_chat_id = ?`,
+		ownerUserID, senderChatID,
+	).Scan(&one)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("query block: %w", err)
+	}
+	return true, nil
+}
+
 func isUniqueViolation(err error) bool {
 	var serr *sqlitedrv.Error
 	if !errors.As(err, &serr) {

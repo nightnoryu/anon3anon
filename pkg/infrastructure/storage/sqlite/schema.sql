@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS relays (
     PRIMARY KEY (dest_chat_id, dest_msg_id)
 );
 
+CREATE TABLE IF NOT EXISTS blocks (
+    owner_user_id  INTEGER NOT NULL,
+    sender_chat_id INTEGER NOT NULL,
+    created_at     INTEGER NOT NULL,
+    PRIMARY KEY (owner_user_id, sender_chat_id)
+);
+
 CREATE TABLE IF NOT EXISTS message_rates (
     sender_id    INTEGER NOT NULL,
     recipient_id INTEGER NOT NULL,

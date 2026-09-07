@@ -29,6 +29,18 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 		return false
 	}
 
+	if msg.From.ID != relay.OwnerUserID {
+		blocked, err := d.Store.IsBlocked(ctx, relay.OwnerUserID, msg.Chat.ID)
+		if err != nil {
+			d.Logger.Error(err)
+			return true
+		}
+		if blocked {
+			d.reply(ctx, c, msg.Chat.ID, blockedSenderMessage)
+			return true
+		}
+	}
+
 	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID); err != nil {
 		if errors.Is(err, errRateLimited) {
 			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
@@ -62,6 +74,16 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 	}
 	if !ok {
 		d.reply(ctx, c, msg.Chat.ID, noSessionMessage)
+		return
+	}
+
+	blocked, err := d.Store.IsBlocked(ctx, owner.TgUserID, msg.Chat.ID)
+	if err != nil {
+		d.Logger.Error(err)
+		return
+	}
+	if blocked {
+		d.reply(ctx, c, msg.Chat.ID, blockedSenderMessage)
 		return
 	}
 
@@ -104,4 +126,30 @@ func (d DependencyContainer) relay(
 		OriginChatID: src.Chat.ID,
 		OwnerUserID:  ownerUserID,
 	})
+}
+
+// block handles the "/block" command: the owner replies with it to a delivered
+// anonymous message to stop its sender from reaching them again.
+func (d DependencyContainer) block(ctx context.Context, c telegramClient, msg *models.Message) {
+	if msg.ReplyToMessage == nil {
+		d.reply(ctx, c, msg.Chat.ID, blockNeedsReplyMessage)
+		return
+	}
+
+	relay, ok, err := d.Store.LookupRelay(ctx, msg.Chat.ID, msg.ReplyToMessage.ID)
+	if err != nil {
+		d.Logger.Error(err)
+		return
+	}
+	if !ok || relay.OwnerUserID != msg.From.ID {
+		d.reply(ctx, c, msg.Chat.ID, blockUnknownMessage)
+		return
+	}
+
+	if err := d.Store.Block(ctx, relay.OwnerUserID, relay.OriginChatID); err != nil {
+		d.Logger.Error(err)
+		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
+		return
+	}
+	d.reply(ctx, c, msg.Chat.ID, blockedMessage)
 }

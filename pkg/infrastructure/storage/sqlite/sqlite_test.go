@@ -184,6 +184,37 @@ func TestAllowMessageDisabled(t *testing.T) {
 	}
 }
 
+func TestBlockAndIsBlocked(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	blocked, err := store.IsBlocked(ctx, 10, 555)
+	require.NoError(t, err)
+	assert.False(t, blocked)
+
+	require.NoError(t, store.Block(ctx, 10, 555))
+
+	blocked, err = store.IsBlocked(ctx, 10, 555)
+	require.NoError(t, err)
+	assert.True(t, blocked)
+
+	// Block is idempotent.
+	require.NoError(t, store.Block(ctx, 10, 555))
+	blocked, err = store.IsBlocked(ctx, 10, 555)
+	require.NoError(t, err)
+	assert.True(t, blocked)
+
+	// Scoped to the (owner, sender) pair.
+	blocked, err = store.IsBlocked(ctx, 10, 777)
+	require.NoError(t, err)
+	assert.False(t, blocked)
+
+	blocked, err = store.IsBlocked(ctx, 20, 555)
+	require.NoError(t, err)
+	assert.False(t, blocked)
+}
+
 func TestRotateTokenUnknownUser(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

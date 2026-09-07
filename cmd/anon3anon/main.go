@@ -66,6 +66,7 @@ func registerCommands(ctx context.Context, b *bot.Bot) error {
 			{Command: "start", Description: "Получить свою персональную ссылку"},
 			{Command: "mylink", Description: "Показать текущую персональную ссылку"},
 			{Command: "revoke", Description: "Отозвать ссылку и выпустить новую"},
+			{Command: "block", Description: "Ответом на сообщение - заблокировать отправителя"},
 		},
 	})
 	return err
@@ -89,6 +90,7 @@ func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logg
 		bot.WithMessageTextHandler("start", bot.MatchTypeCommand, handler.NewStartCommandHandler(deps)),
 		bot.WithMessageTextHandler("mylink", bot.MatchTypeCommand, handler.NewMyLinkHandler(deps)),
 		bot.WithMessageTextHandler("revoke", bot.MatchTypeCommand, handler.NewRevokeHandler(deps)),
+		bot.WithMessageTextHandler("block", bot.MatchTypeCommand, handler.NewBlockHandler(deps)),
 		bot.WithDefaultHandler(handler.NewMessageRouter(deps)),
 	}, nil
 }

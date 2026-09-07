@@ -1,10 +1,14 @@
-# anon3anon
+<p align="center">
+  <a href="https://github.com/nightnoryu/anon3anon/releases"><img src="https://img.shields.io/github/release/nightnoryu/anon3anon.svg?cache-control=no-cache"></a>
+  <a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
+  <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
+</p>
 
 Telegram bot for anonymous messages.
 
-## Local Development
+## 🛠 Local Development
 
-Prerequisites:
+### Prerequisites
 
 - [mise](https://mise.jdx.dev)
 - Docker with docker-compose-plugin
@@ -23,6 +27,6 @@ mise run
 docker compose up -d
 ```
 
-## License
+## 📜 License
 
 Distributed under the MIT License. See [License](/LICENSE) for more information.

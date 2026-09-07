@@ -25,7 +25,7 @@ func main() {
 		logger.FatalError(err)
 	}
 
-	store, err := sqlite.Open(conf.DatabasePath)
+	store, err := sqlite.Open(conf.DatabasePath, conf.RateLimitWindow, conf.RateLimitMax)
 	if err != nil {
 		logger.FatalError(err)
 	}

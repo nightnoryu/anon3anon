@@ -19,3 +19,11 @@ CREATE TABLE IF NOT EXISTS relays (
     created_at     INTEGER NOT NULL,
     PRIMARY KEY (dest_chat_id, dest_msg_id)
 );
+
+CREATE TABLE IF NOT EXISTS message_rates (
+    sender_id    INTEGER NOT NULL,
+    recipient_id INTEGER NOT NULL,
+    bucket       INTEGER NOT NULL,
+    count        INTEGER NOT NULL,
+    PRIMARY KEY (sender_id, recipient_id, bucket)
+);

@@ -25,4 +25,9 @@ type Store interface {
 	PutRelay(ctx context.Context, r Relay) error
 	// LookupRelay finds the relay for a message that was replied to.
 	LookupRelay(ctx context.Context, destChatID int64, destMsgID int) (Relay, bool, error)
+
+	// AllowMessage records one message from senderID to recipientID in the
+	// current time bucket and reports whether the sender is still within the
+	// per-bucket quota for that recipient.
+	AllowMessage(ctx context.Context, senderID, recipientID int64) (bool, error)
 }

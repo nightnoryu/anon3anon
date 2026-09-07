@@ -21,10 +21,12 @@ var schema string
 const tokenAttempts = 5
 
 type Store struct {
-	db *sql.DB
+	db         *sql.DB
+	rateWindow time.Duration
+	rateMax    int
 }
 
-func Open(path string) (*Store, error) {
+func Open(path string, rateWindow time.Duration, rateMax int) (*Store, error) {
 	dsn := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)",
 		path,
@@ -42,7 +44,7 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
 
-	return &Store{db: db}, nil
+	return &Store{db: db, rateWindow: rateWindow, rateMax: rateMax}, nil
 }
 
 func (s *Store) Close() error {
@@ -209,6 +211,36 @@ func (s *Store) LookupRelay(ctx context.Context, destChatID int64, destMsgID int
 	}
 	r.CreatedAt = time.Unix(created, 0).UTC()
 	return r, true, nil
+}
+
+func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (bool, error) {
+	if s.rateWindow <= 0 || s.rateMax <= 0 {
+		return true, nil
+	}
+
+	bucket := time.Now().UTC().Unix() / int64(s.rateWindow.Seconds())
+
+	if _, err := s.db.ExecContext(ctx,
+		`DELETE FROM message_rates
+		 WHERE sender_id = ? AND recipient_id = ? AND bucket < ?`,
+		senderID, recipientID, bucket,
+	); err != nil {
+		return false, fmt.Errorf("prune message rates: %w", err)
+	}
+
+	var count int
+	err := s.db.QueryRowContext(ctx,
+		`INSERT INTO message_rates (sender_id, recipient_id, bucket, count)
+		 VALUES (?, ?, ?, 1)
+		 ON CONFLICT (sender_id, recipient_id, bucket)
+		 DO UPDATE SET count = count + 1
+		 RETURNING count`,
+		senderID, recipientID, bucket,
+	).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("bump message rate: %w", err)
+	}
+	return count <= s.rateMax, nil
 }
 
 func isUniqueViolation(err error) bool {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,9 +13,19 @@ import (
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 )
 
+const (
+	testRateWindow = time.Hour
+	testRateMax    = 3
+)
+
 func newStore(t *testing.T) *sqlite.Store {
 	t.Helper()
-	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"))
+	return newStoreWithRate(t, testRateWindow, testRateMax)
+}
+
+func newStoreWithRate(t *testing.T, window time.Duration, max int) *sqlite.Store {
+	t.Helper()
+	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), window, max)
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, store.Close()) })
 	return store
@@ -133,6 +144,44 @@ func TestRelayPutLookupAndUpsert(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 	assert.Equal(t, int64(11), got.OriginChatID)
+}
+
+func TestAllowMessageQuotaPerSenderRecipientBucket(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t) // window 1h, max 3
+
+	for i := 1; i <= testRateMax; i++ {
+		ok, err := store.AllowMessage(ctx, 1, 2)
+		require.NoError(t, err)
+		assert.True(t, ok, "message %d is within quota", i)
+	}
+
+	ok, err := store.AllowMessage(ctx, 1, 2)
+	require.NoError(t, err)
+	assert.False(t, ok, "message over quota is rejected")
+
+	// A different recipient has an independent budget.
+	ok, err = store.AllowMessage(ctx, 1, 99)
+	require.NoError(t, err)
+	assert.True(t, ok)
+
+	// A different sender has an independent budget.
+	ok, err = store.AllowMessage(ctx, 42, 2)
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestAllowMessageDisabled(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStoreWithRate(t, testRateWindow, 0)
+
+	for range 100 {
+		ok, err := store.AllowMessage(ctx, 1, 2)
+		require.NoError(t, err)
+		require.True(t, ok)
+	}
 }
 
 func TestRotateTokenUnknownUser(t *testing.T) {

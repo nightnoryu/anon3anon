@@ -2,12 +2,15 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
 	"anon3anon/pkg/domain"
 )
+
+var errRateLimited = errors.New("rate limited")
 
 // tryRouteReply handles the message when it is a reply to a message the bot
 // previously delivered, routing it back to that message's origin. It reports
@@ -27,8 +30,13 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 	}
 
 	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID); err != nil {
+		if errors.Is(err, errRateLimited) {
+			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
+			return true
+		}
 		d.Logger.Error(err)
 		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
+		return true
 	}
 	d.reply(ctx, c, msg.Chat.ID, replySentMessage)
 	return true
@@ -58,6 +66,10 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 	}
 
 	if err := d.relay(ctx, c, msg, owner.ChatID, owner.TgUserID); err != nil {
+		if errors.Is(err, errRateLimited) {
+			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
+			return
+		}
 		d.Logger.Error(err)
 		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
 		return
@@ -70,6 +82,14 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 func (d DependencyContainer) relay(
 	ctx context.Context, c telegramClient, src *models.Message, destChatID, ownerUserID int64,
 ) error {
+	allowed, err := d.Store.AllowMessage(ctx, src.Chat.ID, destChatID)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return errRateLimited
+	}
+
 	copied, err := c.CopyMessage(ctx, &bot.CopyMessageParams{
 		ChatID:     destChatID,
 		FromChatID: src.Chat.ID,

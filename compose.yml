@@ -5,7 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      ANON3ANON_ALLOWED_USER_IDS: ""
       ANON3ANON_DATABASE_PATH: /data/anon3anon.db
+      ANON3ANON_RATE_LIMIT_WINDOW: "1h"
+      ANON3ANON_RATE_LIMIT_MAX: "100"
     volumes:
       - "./bin:/app/bin"
       - "anon3anon-data:/data"

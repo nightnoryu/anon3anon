@@ -5,7 +5,9 @@ namespace: anon3anon
 
 resources:
   - ../base
-  - secret.yaml
+
+generators:
+  - secret-generator.yaml
 
 images:
   - name: ghcr.io/nightnoryu/anon3anon

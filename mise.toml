@@ -9,15 +9,18 @@ CGO_ENABLED = "0"
 
 [tasks.default]
 run = [
-    { task = "modules" },
     { task = "build" },
     { task = "check" },
 ]
 
-[tasks.modules]
+[tasks.tidy]
 run = "go mod tidy"
 
+[tasks.modules]
+run = "go mod download"
+
 [tasks.build]
+depends = [ "modules" ]
 run = "go build -trimpath -v --gcflags 'all=-N -l' -o ./bin/anon3anon ./cmd/anon3anon"
 
 [tasks.check]

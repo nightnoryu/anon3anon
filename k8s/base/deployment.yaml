@@ -17,10 +17,47 @@ spec:
       labels:
         app: anon3anon
     spec:
+      securityContext:
+        sysctls:
+          - name: net.ipv4.conf.all.src_valid_mark
+            value: "1"
+      initContainers:
+        - name: warp
+          image: caomingjun/warp:latest
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          ports:
+            - name: warp-proxy
+              containerPort: 1080
+          env:
+            - name: WARP_SLEEP
+              value: "2"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          volumeMounts:
+            - name: warp-data
+              mountPath: /var/lib/cloudflare-warp
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "curl -sf --max-time 5 -x socks5h://127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace | grep -q 'warp=on'"
+            initialDelaySeconds: 5
+            periodSeconds: 15
       containers:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: ANON3ANON_TELEGRAM_BOT_TOKEN
               valueFrom:
@@ -35,6 +72,12 @@ spec:
                   optional: true
             - name: ANON3ANON_DATABASE_PATH
               value: /data/anon3anon.db
+            - name: HTTP_PROXY
+              value: socks5://127.0.0.1:1080
+            - name: HTTPS_PROXY
+              value: socks5://127.0.0.1:1080
+            - name: NO_PROXY
+              value: localhost,127.0.0.1,::1
           volumeMounts:
             - name: data
               mountPath: /data
@@ -49,3 +92,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: anon3anon-data
+        - name: warp-data
+          emptyDir: {}

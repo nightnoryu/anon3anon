@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/nightnoryu/go-kita/env"
 	"github.com/nightnoryu/go-kita/jsonlog"
 	"github.com/nightnoryu/go-kita/log"
@@ -18,9 +19,7 @@ const appID = "anon3anon"
 
 func main() {
 	ctx := runtime.ListenOSKillSignals(context.Background())
-
 	logger := initLogger()
-
 	conf, err := env.ParseEnv[config](appID)
 	if err != nil {
 		logger.FatalError(err)
@@ -46,6 +45,10 @@ func main() {
 		logger.FatalError(err)
 	}
 
+	if err := registerCommands(ctx, b); err != nil {
+		logger.FatalError(err)
+	}
+
 	b.Start(ctx)
 }
 
@@ -57,9 +60,18 @@ func initLogger() log.MainLogger {
 	return logger
 }
 
-func initBotOptions(
-	ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger,
-) ([]bot.Option, error) {
+func registerCommands(ctx context.Context, b *bot.Bot) error {
+	_, err := b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			{Command: "start", Description: "Получить свою персональную ссылку"},
+			{Command: "mylink", Description: "Показать текущую персональную ссылку"},
+			{Command: "revoke", Description: "Отозвать ссылку и выпустить новую"},
+		},
+	})
+	return err
+}
+
+func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger) ([]bot.Option, error) {
 	username, err := resolveBotUsername(ctx, conf.TelegramBotToken)
 	if err != nil {
 		return nil, err

@@ -4,18 +4,76 @@
 <a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
 <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
 
-Multi-tenant Telegram bot for anonymous messages. Available at [@anon3anon_bot](https://t.me/anon3anon_bot).
+Multi-tenant Telegram bot for anonymous messages. One bot instance serves many recipients at once - every registered
+user gets their own personal link, and anyone who opens that link can message them anonymously. Public
+instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 
 ## ✅ Features
 
-- Per-user personal links (`t.me/<bot>?start=<token>`), unguessable random tokens
-- Two-way, threaded anonymous conversations (reply to a message to answer)
-- `/mylink` to show your link again, `/revoke` to rotate it and kill the old one
-- `/block` as a reply to a delivered message to stop that anonymous sender for good
+- **Per-user personal links** - `t.me/<bot>?start=<token>`, with unguessable random tokens
+- **Two-way threaded conversations** - the recipient replies to a delivered message and the answer goes back to the
+  original anonymous sender, still anonymous in both directions
+- **`/revoke`** rotates your link and immediately kills the old one
+- **`/block`** as a reply to a delivered message stops that one anonymous sender from ever reaching you again - other
+  senders are unaffected
+- **Per-pair rate limiting** - each sender is capped at *N* messages per time window *per recipient*, so one recipient
+  getting spammed doesn't affect anyone else
+- **Optional allow list** - restrict who may register as a recipient by Telegram user ID; senders are never restricted
+- Messages are relayed with `copyMessage`, so any content type (text, photos, files, voice, stickers, etc.) works and
+  no "forwarded from" header leaks the sender
+
+## 💬 How it works
+
+**As a recipient**
+
+1. Send `/start` to the bot. It replies with your personal link
+2. Share that link with anyone you want anonymous messages from
+3. Their messages arrive in your chat with the bot. **Reply** to a message to answer its sender
+4. `/mylink` shows the link again, `/revoke` issues a fresh one, `/block` (as a reply) bans a sender
+
+**As a sender**
+
+1. Open someone's personal link (`t.me/<bot>?start=<token>`). The bot confirms you can now write
+2. Send messages normally - they are delivered anonymously to the link's owner
+3. When the owner replies, their answer lands in your chat. Reply to it to continue the thread
 
 ## 🚀 Hosting
 
+You can easily host your own instance of this bot.
+
+### Docker
+
+Just run the pre-build image:
+
+```shell
+docker run -d --name anon3anon \
+  -e ANON3ANON_TELEGRAM_BOT_TOKEN=123:ABC \
+  -e ANON3ANON_ALLOWED_USER_IDS=123,456 \
+  -v anon3anon-data:/data \
+  ghcr.io/nightnoryu/anon3anon:latest
+```
+
+Or with docker-compose:
+
+```yaml
 TODO
+```
+
+### Kubernetes
+
+TODO
+
+### ⚙️ Configuration
+
+All configuration is set via environment variables (prefix `ANON3ANON_`):
+
+| Variable                       | Required | Default              | Description                                                              |
+|--------------------------------|----------|----------------------|--------------------------------------------------------------------------|
+| `ANON3ANON_TELEGRAM_BOT_TOKEN` | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                      |
+| `ANON3ANON_DATABASE_PATH`      | no       | `/data/anon3anon.db` | Path to the SQLite database file                                         |
+| `ANON3ANON_ALLOWED_USER_IDS`   | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients    |
+| `ANON3ANON_RATE_LIMIT_WINDOW`  | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting         |
+| `ANON3ANON_RATE_LIMIT_MAX`     | no       | `100`                | Max messages per sender→recipient per window. `0` disables rate limiting |
 
 ## ⚒️ Local Development
 
@@ -30,13 +88,21 @@ TODO
 git clone https://github.com/nightnoryu/anon3anon
 cd anon3anon
 
-# Configure the environment
+# Configure the environment (bot token)
 cp compose.override.example.yml compose.override.yml
 $EDITOR compose.override.yml
 
-mise run      # Build the binary
-mise run dev  # Spins up docker container
+mise run        # download modules, build the binary, lint, test
+mise run dev    # build and start the container (binary is bind-mounted from ./bin)
 ```
+
+The container runs the host-built binary from `./bin`, so after a code change:
+
+```shell
+mise run dev:reload   # rebuild and restart the container
+```
+
+See [mise.toml](/mise.toml) for more pre-configured tasks.
 
 ## 📜 License
 

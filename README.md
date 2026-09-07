@@ -4,13 +4,15 @@
   <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
 </p>
 
-Telegram bot for anonymous messages.
+Multi-tenant Telegram bot for anonymous messages. Available at [@anon3anon_bot](https://t.me/anon3anon_bot).
 
 ## ✅ Features
 
-TODO
+- Per-user personal links (`t.me/<bot>?start=<token>`), unguessable random tokens
+- Two-way, threaded anonymous conversations (reply to a message to answer)
+- `/mylink` to show your link again, `/revoke` to rotate it and kill the old one
 
-## 🚀 Quick Start
+## 🚀 Hosting
 
 TODO
 
@@ -27,7 +29,7 @@ TODO
 git clone https://github.com/nightnoryu/anon3anon
 cd anon3anon
 
-# Set the env
+# Configure the environment
 cp compose.override.example.yml compose.override.yml
 $EDITOR compose.override.yml
 

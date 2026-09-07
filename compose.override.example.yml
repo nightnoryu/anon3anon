@@ -3,7 +3,6 @@ services:
     environment:
       # Token for your bot, obtained from t.me/BotFather
       ANON3ANON_TELEGRAM_BOT_TOKEN: 123:ABC
-      # ID of your chat with your bot
-      # When launching the bot for the first time, leave empty and write a message to the bot. It
-      # will print the chat ID in the logs and after that you can set it up.
-      ANON3ANON_OWNER_CHAT_ID: 123
+      # Comma-separated Telegram user IDs allowed to register as recipients.
+      # Leave empty to let anyone register.
+      ANON3ANON_ALLOWED_USER_IDS: ""

@@ -4,5 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      ANON3ANON_DATABASE_PATH: /data/anon3anon.db
     volumes:
       - "./bin:/app/bin"
+      - "anon3anon-data:/data"
+
+volumes:
+  anon3anon-data:

@@ -23,9 +23,9 @@ func newStore(t *testing.T) *sqlite.Store {
 	return newStoreWithRate(t, testRateWindow, testRateMax)
 }
 
-func newStoreWithRate(t *testing.T, window time.Duration, max int) *sqlite.Store {
+func newStoreWithRate(t *testing.T, window time.Duration, maxRate int) *sqlite.Store {
 	t.Helper()
-	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), window, max)
+	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), window, maxRate)
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, store.Close()) })
 	return store

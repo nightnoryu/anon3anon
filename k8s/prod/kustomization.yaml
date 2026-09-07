@@ -5,6 +5,7 @@ namespace: anon3anon
 
 resources:
   - ../base
+  - configmap.yaml
 
 generators:
   - secret-generator.yaml

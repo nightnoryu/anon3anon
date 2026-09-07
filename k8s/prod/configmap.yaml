@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: anon3anon-config
+data:
+  ANON3ANON_RATE_LIMIT_WINDOW: "1h"
+  ANON3ANON_RATE_LIMIT_MAX: "100"

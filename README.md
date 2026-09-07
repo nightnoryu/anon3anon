@@ -6,6 +6,14 @@
 
 Telegram bot for anonymous messages.
 
+## ✅ Features
+
+TODO
+
+## 🚀 Quick Start
+
+TODO
+
 ## 🛠 Local Development
 
 ### Prerequisites

@@ -22,24 +22,6 @@ type DependencyContainer struct {
 	AllowedUsers AllowList
 }
 
-type AllowList map[int64]struct{}
-
-func NewAllowList(ids []int64) AllowList {
-	set := make(AllowList, len(ids))
-	for _, id := range ids {
-		set[id] = struct{}{}
-	}
-	return set
-}
-
-func (a AllowList) Allowed(id int64) bool {
-	if len(a) == 0 {
-		return true
-	}
-	_, ok := a[id]
-	return ok
-}
-
 func (d DependencyContainer) reply(ctx context.Context, c telegramClient, chatID int64, text string) {
 	if _, err := c.SendMessage(ctx, &bot.SendMessageParams{ChatID: chatID, Text: text}); err != nil {
 		d.Logger.Error(err)

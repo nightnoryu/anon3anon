@@ -9,6 +9,7 @@ import (
 	"github.com/nightnoryu/go-kita/log"
 	"github.com/nightnoryu/go-kita/runtime"
 
+	"anon3anon/pkg/infrastructure/storage/sqlite"
 	"anon3anon/pkg/infrastructure/telegram/handler"
 	"anon3anon/pkg/infrastructure/telegram/middleware"
 )
@@ -25,7 +26,21 @@ func main() {
 		logger.FatalError(err)
 	}
 
-	options := initBotOptions(conf, logger)
+	store, err := sqlite.Open(conf.DatabasePath)
+	if err != nil {
+		logger.FatalError(err)
+	}
+	defer func() {
+		if cerr := store.Close(); cerr != nil {
+			logger.Error(cerr)
+		}
+	}()
+
+	options, err := initBotOptions(ctx, conf, store, logger)
+	if err != nil {
+		logger.FatalError(err)
+	}
+
 	b, err := bot.New(conf.TelegramBotToken, options...)
 	if err != nil {
 		logger.FatalError(err)
@@ -42,13 +57,38 @@ func initLogger() log.MainLogger {
 	return logger
 }
 
-func initBotOptions(conf *config, logger log.Logger) []bot.Option {
-	startCommandHandler := handler.NewStartCommandHandler(logger)
-	anonymousMessagesHandler := handler.NewAnonymousMessagesHandler(logger, conf.OwnerChatID)
+func initBotOptions(
+	ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger,
+) ([]bot.Option, error) {
+	username, err := resolveBotUsername(ctx, conf.TelegramBotToken)
+	if err != nil {
+		return nil, err
+	}
+
+	deps := handler.DependencyContainer{
+		Store:        store,
+		Logger:       logger,
+		BotUsername:  username,
+		AllowedUsers: handler.NewAllowList(conf.AllowedUserIDs),
+	}
 
 	return []bot.Option{
 		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
-		bot.WithMessageTextHandler("start", bot.MatchTypeCommand, startCommandHandler),
-		bot.WithDefaultHandler(anonymousMessagesHandler),
+		bot.WithMessageTextHandler("start", bot.MatchTypeCommand, handler.NewStartCommandHandler(deps)),
+		bot.WithMessageTextHandler("mylink", bot.MatchTypeCommand, handler.NewMyLinkHandler(deps)),
+		bot.WithMessageTextHandler("revoke", bot.MatchTypeCommand, handler.NewRevokeHandler(deps)),
+		bot.WithDefaultHandler(handler.NewMessageRouter(deps)),
+	}, nil
+}
+
+func resolveBotUsername(ctx context.Context, botToken string) (string, error) {
+	probe, err := bot.New(botToken, bot.WithSkipGetMe())
+	if err != nil {
+		return "", err
 	}
+	me, err := probe.GetMe(ctx)
+	if err != nil {
+		return "", err
+	}
+	return me.Username, nil
 }

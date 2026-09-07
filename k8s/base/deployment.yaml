@@ -27,15 +27,25 @@ spec:
                 secretKeyRef:
                   name: anon3anon-secrets
                   key: ANON3ANON_TELEGRAM_BOT_TOKEN
-            - name: ANON3ANON_OWNER_CHAT_ID
+            - name: ANON3ANON_ALLOWED_USER_IDS
               valueFrom:
                 secretKeyRef:
                   name: anon3anon-secrets
-                  key: ANON3ANON_OWNER_CHAT_ID
+                  key: ANON3ANON_ALLOWED_USER_IDS
+                  optional: true
+            - name: ANON3ANON_DATABASE_PATH
+              value: /data/anon3anon.db
+          volumeMounts:
+            - name: data
+              mountPath: /data
           resources:
             requests:
               cpu: 10m
-              memory: 16Mi
+              memory: 32Mi
             limits:
               cpu: 200m
-              memory: 64Mi
+              memory: 128Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: anon3anon-data

@@ -56,14 +56,37 @@ docker run -d --name anon3anon \
 Or with docker-compose:
 
 ```yaml
-TODO
+services:
+  anon3anon:
+    image: ghcr.io/nightnoryu/anon3anon:latest
+    container_name: anon3anon
+    restart: unless-stopped
+    environment:
+      ANON3ANON_TELEGRAM_BOT_TOKEN: "123:ABC"
+      ANON3ANON_ALLOWED_USER_IDS: "123,456"
+    volumes:
+      - "anon3anon-data:/data"
+
+volumes:
+  anon3anon-data:
 ```
 
 ### Kubernetes
 
-TODO
+`k8s/` holds a Kustomize setup (`base` + `prod` overlay):
 
-### ⚙️ Configuration
+- Single replica, `Recreate` strategy, SQLite on a `PersistentVolumeClaim`
+- Secrets are SOPS-encrypted (age) and decrypted at apply time with [ksops](https://github.com/viaduct-ai/kustomize-sops)
+- A [Cloudflare WARP](https://github.com/cmj2002/warp-docker) init container gives the app a SOCKS5 proxy for Telegram
+  egress where the API is blocked
+
+Replace the sops-encoded secrets with yours and apply the `prod` overlay:
+
+```shell
+kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
+```
+
+### Configuration
 
 All configuration is set via environment variables (prefix `ANON3ANON_`):
 

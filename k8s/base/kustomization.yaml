@@ -5,4 +5,5 @@ namespace: anon3anon
 
 resources:
   - namespace.yaml
+  - pvc.yaml
   - deployment.yaml

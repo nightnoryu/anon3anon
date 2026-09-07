@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"os"
-	"os/signal"
 
 	"github.com/go-telegram/bot"
+	"github.com/nightnoryu/go-kita/env"
+	"github.com/nightnoryu/go-kita/jsonlog"
+	"github.com/nightnoryu/go-kita/log"
+	"github.com/nightnoryu/go-kita/runtime"
 
-	"anon3anon/pkg/infrastructure/jsonlog"
-	"anon3anon/pkg/infrastructure/log"
 	"anon3anon/pkg/infrastructure/telegram/handler"
 	"anon3anon/pkg/infrastructure/telegram/middleware"
 )
@@ -16,9 +16,11 @@ import (
 const appID = "anon3anon"
 
 func main() {
+	ctx := runtime.ListenOSKillSignals(context.Background())
+
 	logger := initLogger()
 
-	conf, err := parseEnv()
+	conf, err := env.ParseEnv[config](appID)
 	if err != nil {
 		logger.FatalError(err)
 	}
@@ -28,9 +30,6 @@ func main() {
 	if err != nil {
 		logger.FatalError(err)
 	}
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
 
 	b.Start(ctx)
 }

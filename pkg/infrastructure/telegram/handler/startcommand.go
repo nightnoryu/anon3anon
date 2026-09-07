@@ -5,8 +5,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
-
-	"anon3anon/pkg/infrastructure/log"
+	"github.com/nightnoryu/go-kita/log"
 )
 
 func NewStartCommandHandler(logger log.Logger) bot.HandlerFunc {

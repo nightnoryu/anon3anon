@@ -43,7 +43,7 @@ You can easily host your own instance of this bot.
 
 ### Docker
 
-Just run the pre-build image:
+Just run the pre-built image:
 
 ```shell
 docker run -d --name anon3anon \
@@ -76,7 +76,8 @@ volumes:
 `k8s/` holds a Kustomize setup (`base` + `prod` overlay):
 
 - Single replica, `Recreate` strategy, SQLite on a `PersistentVolumeClaim`
-- Secrets are SOPS-encrypted (age) and decrypted at apply time with [ksops](https://github.com/viaduct-ai/kustomize-sops)
+- Secrets are SOPS-encrypted (age) and decrypted at apply time
+  with [ksops](https://github.com/viaduct-ai/kustomize-sops)
 - A [Cloudflare WARP](https://github.com/cmj2002/warp-docker) init container gives the app a SOCKS5 proxy for Telegram
   egress where the API is blocked
 
@@ -90,13 +91,13 @@ kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f
 
 All configuration is set via environment variables (prefix `ANON3ANON_`):
 
-| Variable                       | Required | Default              | Description                                                              |
-|--------------------------------|----------|----------------------|--------------------------------------------------------------------------|
-| `ANON3ANON_TELEGRAM_BOT_TOKEN` | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                      |
-| `ANON3ANON_DATABASE_PATH`      | no       | `/data/anon3anon.db` | Path to the SQLite database file                                         |
-| `ANON3ANON_ALLOWED_USER_IDS`   | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients    |
-| `ANON3ANON_RATE_LIMIT_WINDOW`  | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting         |
-| `ANON3ANON_RATE_LIMIT_MAX`     | no       | `100`                | Max messages per sender→recipient per window. `0` disables rate limiting |
+| Variable                       | Required | Default              | Description                                                                                                                          |
+|--------------------------------|----------|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `ANON3ANON_TELEGRAM_BOT_TOKEN` | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                                                                                  |
+| `ANON3ANON_DATABASE_PATH`      | no       | `/data/anon3anon.db` | Path to the SQLite database file                                                                                                     |
+| `ANON3ANON_ALLOWED_USER_IDS`   | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Can be obtained from [@userinfobot](https://t.me/userinfobot) |
+| `ANON3ANON_RATE_LIMIT_WINDOW`  | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting                                                                     |
+| `ANON3ANON_RATE_LIMIT_MAX`     | no       | `100`                | Max messages per sender -> recipient per window. `0` disables rate limiting                                                          |
 
 ## ⚒️ Local Development
 

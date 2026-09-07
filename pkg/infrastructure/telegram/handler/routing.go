@@ -30,6 +30,7 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 		d.Logger.Error(err)
 		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
 	}
+	d.reply(ctx, c, msg.Chat.ID, replySentMessage)
 	return true
 }
 

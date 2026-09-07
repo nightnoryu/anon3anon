@@ -33,8 +33,8 @@ cd anon3anon
 cp compose.override.example.yml compose.override.yml
 $EDITOR compose.override.yml
 
-mise run
-docker compose up -d
+mise run      # Build the binary
+mise run dev  # Spins up docker container
 ```
 
 ## 📜 License

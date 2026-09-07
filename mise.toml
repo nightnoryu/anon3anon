@@ -13,6 +13,27 @@ run = [
     { task = "check" },
 ]
 
+# Local environment
+
+[tasks.dev]
+depends = [ "build" ]
+run = "docker compose up -d --wait"
+
+[tasks."dev:reload"]
+depends = [ "build" ]
+run = "docker compose restart anon3anon"
+
+[tasks."dev:down"]
+run = "docker compose down"
+
+[tasks."dev:ps"]
+run = "docker compose ps"
+
+[tasks."dev:logs"]
+run = "docker compose logs -f"
+
+# Build
+
 [tasks.tidy]
 run = "go mod tidy"
 
@@ -22,6 +43,8 @@ run = "go mod download"
 [tasks.build]
 depends = [ "modules" ]
 run = "go build -trimpath -v --gcflags 'all=-N -l' -o ./bin/anon3anon ./cmd/anon3anon"
+
+# Checks
 
 [tasks.check]
 depends = [ "lint", "test:unit" ]

@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       ANON3ANON_ALLOWED_USER_IDS: ""
       ANON3ANON_DATABASE_PATH: /data/anon3anon.db

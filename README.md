@@ -16,7 +16,7 @@ Multi-tenant Telegram bot for anonymous messages. Available at [@anon3anon_bot](
 
 TODO
 
-## 🛠 Local Development
+## ⚒️ Local Development
 
 ### Prerequisites
 

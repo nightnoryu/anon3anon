@@ -15,7 +15,7 @@ import (
 func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger) {
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           health.Handler(store),
+		Handler:           health.Handler(store, logger),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/nightnoryu/go-kita/log"
 )
 
 const pingTimeout = 2 * time.Second
@@ -12,7 +14,7 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
-func Handler(store Pinger) http.Handler {
+func Handler(store Pinger, logger log.Logger) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -25,7 +27,8 @@ func Handler(store Pinger) http.Handler {
 		defer cancel()
 
 		if err := store.Ping(ctx); err != nil {
-			http.Error(w, "not ready: "+err.Error(), http.StatusServiceUnavailable)
+			logger.Error(err)
+			http.Error(w, "not ready", http.StatusServiceUnavailable)
 			return
 		}
 		w.WriteHeader(http.StatusOK)

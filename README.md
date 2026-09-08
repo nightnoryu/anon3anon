@@ -97,7 +97,8 @@ All configuration is set via environment variables (prefix `ANON3ANON_`):
 | `ANON3ANON_DATABASE_PATH`      | no       | `/data/anon3anon.db` | Path to the SQLite database file                                                                                                     |
 | `ANON3ANON_ALLOWED_USER_IDS`   | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Can be obtained from [@userinfobot](https://t.me/userinfobot) |
 | `ANON3ANON_RATE_LIMIT_WINDOW`  | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting                                                                     |
-| `ANON3ANON_RATE_LIMIT_MAX`     | no       | `100`                | Max messages per sender -> recipient per window. `0` disables rate limiting                                                          |
+| `ANON3ANON_RATE_LIMIT_MAX`     | no       | `100`                | Max inbound anonymous messages per sender -> recipient per window. Recipient replies are not counted. `0` disables rate limiting     |
+| `ANON3ANON_HEALTH_ADDR`        | no       | `:8080`              | Listen address for the liveness (`/healthz`) and readiness (`/readyz`) HTTP endpoints                                                |
 
 ## ⚒️ Local Development
 

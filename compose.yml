@@ -15,7 +15,7 @@ services:
       ANON3ANON_RETENTION_AGE: "720h"
       ANON3ANON_RETENTION_SWEEP_INTERVAL: "1h"
     volumes:
-      - "./bin:/app/bin"
+      - "./bin:/app/bin:ro"
       - "anon3anon-data:/data"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/readyz"]

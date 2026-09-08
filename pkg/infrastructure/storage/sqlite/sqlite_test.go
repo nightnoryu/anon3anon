@@ -161,8 +161,8 @@ func TestClearSessionsForOwner(t *testing.T) {
 	assert.Equal(t, int64(2), removed)
 
 	for _, sender := range []int64{501, 502} {
-		_, ok, err := store.GetSession(ctx, sender)
-		require.NoError(t, err)
+		_, ok, err2 := store.GetSession(ctx, sender)
+		require.NoError(t, err2)
 		assert.Falsef(t, ok, "sender %d must be cut off", sender)
 	}
 

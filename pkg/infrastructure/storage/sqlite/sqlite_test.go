@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -519,4 +520,115 @@ func TestRotateTokenUnknownUser(t *testing.T) {
 
 	_, err := store.RotateToken(ctx, 12345)
 	assert.Error(t, err)
+}
+
+func TestUpsertUserIsSafeUnderConcurrency(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	// The bot dispatches every update in its own goroutine, so a user who taps
+	// /start twice reaches UpsertUser concurrently.
+	const callers = 8
+	var (
+		wg    sync.WaitGroup
+		users = make([]domain.User, callers)
+		errs  = make([]error, callers)
+	)
+	for i := range callers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			users[i], errs[i] = store.UpsertUser(ctx, 300, 300)
+		}()
+	}
+	wg.Wait()
+
+	for i, err := range errs {
+		require.NoErrorf(t, err, "caller %d", i)
+	}
+	// One row, one token: nobody may be handed a second registration.
+	for i, u := range users {
+		assert.Equalf(t, users[0].LinkToken, u.LinkToken, "caller %d saw a different token", i)
+	}
+}
+
+func TestClearRelaysForOwner(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 1000, DestMsgID: 1, OriginChatID: 50, OwnerUserID: 10,
+	}))
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 50, DestMsgID: 2, OriginChatID: 1000, OwnerUserID: 10,
+	}))
+	// A different owner's conversation must survive.
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 2000, DestMsgID: 3, OriginChatID: 50, OwnerUserID: 20,
+	}))
+
+	removed, err := store.ClearRelaysForOwner(ctx, 10)
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, removed)
+
+	for _, c := range []struct {
+		chatID int64
+		msgID  int
+	}{{1000, 1}, {50, 2}} {
+		_, found, lookupErr := store.LookupRelay(ctx, c.chatID, c.msgID)
+		require.NoError(t, lookupErr)
+		assert.Falsef(t, found, "relay %d/%d must be gone", c.chatID, c.msgID)
+	}
+
+	_, ok, err := store.LookupRelay(ctx, 2000, 3)
+	require.NoError(t, err)
+	assert.True(t, ok, "another owner's relay must be untouched")
+
+	// Idempotent.
+	removed, err = store.ClearRelaysForOwner(ctx, 10)
+	require.NoError(t, err)
+	assert.Zero(t, removed)
+}
+
+func TestClearRelaysForSenderOnlyTouchesThatPair(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	// Owner 10 talks to senders 50 and 51.
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 1000, DestMsgID: 1, OriginChatID: 50, OwnerUserID: 10,
+	}))
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 50, DestMsgID: 2, OriginChatID: 1000, OwnerUserID: 10,
+	}))
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 1000, DestMsgID: 3, OriginChatID: 51, OwnerUserID: 10,
+	}))
+	// Sender 50 also talks to owner 20.
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 50, DestMsgID: 4, OriginChatID: 2000, OwnerUserID: 20,
+	}))
+
+	removed, err := store.ClearRelaysForSender(ctx, 50, 10)
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, removed, "both directions of the 50<->10 pair")
+
+	for _, c := range []struct {
+		chatID int64
+		msgID  int
+		want   bool
+		what   string
+	}{
+		{1000, 1, false, "inbound leg of the cleared pair"},
+		{50, 2, false, "outbound leg of the cleared pair"},
+		{1000, 3, true, "the same owner's other sender"},
+		{50, 4, true, "the same sender's other owner"},
+	} {
+		_, ok, err := store.LookupRelay(ctx, c.chatID, c.msgID)
+		require.NoError(t, err)
+		assert.Equalf(t, c.want, ok, "%s", c.what)
+	}
 }

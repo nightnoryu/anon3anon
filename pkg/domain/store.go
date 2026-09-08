@@ -56,6 +56,17 @@ type Store interface {
 	// It is idempotent and reports how many rows it removed from each table.
 	PurgeExpired(ctx context.Context, cutoff time.Time) (PurgeStats, error)
 
+	// ClearRelaysForOwner drops every delivered-message mapping in
+	// ownerUserID's conversations. Clearing a sender's session alone does not
+	// cut them off: a reply to a message the bot already delivered is routed
+	// from the relay map, which no session is consulted for. It is idempotent
+	// and returns the number of mappings removed.
+	ClearRelaysForOwner(ctx context.Context, ownerUserID int64) (int64, error)
+	// ClearRelaysForSender drops the mappings tying senderChatID to
+	// ownerUserID in either direction, leaving that owner's conversations with
+	// everyone else intact. It is idempotent and returns the number removed.
+	ClearRelaysForSender(ctx context.Context, senderChatID, ownerUserID int64) (int64, error)
+
 	// PutRelay stores a delivered-message mapping.
 	PutRelay(ctx context.Context, r Relay) error
 	// LookupRelay finds the relay for a message that was replied to.

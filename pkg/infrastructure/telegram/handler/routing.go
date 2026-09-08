@@ -125,15 +125,22 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 }
 
 func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, msg *models.Message) {
-	if _, ok, err := d.Store.GetSession(ctx, msg.Chat.ID); err != nil {
+	ownerUserID, ok, err := d.Store.GetSession(ctx, msg.Chat.ID)
+	if err != nil {
 		d.Logger.Error(err)
 		return
-	} else if !ok {
+	}
+	if !ok {
 		d.reply(ctx, c, msg.Chat.ID, noSessionToStopMessage)
 		return
 	}
 
 	if err := d.Store.ClearSession(ctx, msg.Chat.ID); err != nil {
+		d.Logger.Error(err)
+		return
+	}
+
+	if _, err := d.Store.ClearRelaysForSender(ctx, msg.Chat.ID, ownerUserID); err != nil {
 		d.Logger.Error(err)
 		return
 	}
@@ -188,14 +195,14 @@ func (d DependencyContainer) relay(
 		OriginChatID: src.Chat.ID,
 		OwnerUserID:  ownerUserID,
 	}); err != nil {
-		return err
+		d.Logger.Error(err)
 	}
 
 	// An inbound anonymous message means the sender's conversation is still
 	// live; slide its retention window forward so PurgeExpired leaves it alone.
 	if rateLimited {
 		if err := d.Store.TouchSession(ctx, src.Chat.ID); err != nil {
-			return err
+			d.Logger.Error(err)
 		}
 	}
 	return nil

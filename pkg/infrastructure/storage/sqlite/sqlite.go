@@ -57,24 +57,12 @@ func (s *Store) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)
 }
 
+// UpsertUser resolves the row in a single statement rather than reading before
+// writing: two concurrent updates from the same user would otherwise both miss
+// the row, and the loser's INSERT would fail on the tg_user_id primary key -
+// indistinguishable here from a link-token collision, so it would burn every
+// retry and report a token exhaustion that never happened.
 func (s *Store) UpsertUser(ctx context.Context, tgUserID, chatID int64) (domain.User, error) {
-	existing, ok, err := s.UserByID(ctx, tgUserID)
-	if err != nil {
-		return domain.User{}, err
-	}
-	if ok {
-		if _, err := s.db.ExecContext(ctx,
-			`UPDATE users SET chat_id = ? WHERE tg_user_id = ?`, chatID, tgUserID,
-		); err != nil {
-			return domain.User{}, fmt.Errorf("refresh chat id: %w", err)
-		}
-		existing.ChatID = chatID
-		return existing, nil
-	}
-	return s.insertUser(ctx, tgUserID, chatID)
-}
-
-func (s *Store) insertUser(ctx context.Context, tgUserID, chatID int64) (domain.User, error) {
 	now := time.Now().UTC()
 	for range tokenAttempts {
 		tok, err := token.New()
@@ -82,17 +70,26 @@ func (s *Store) insertUser(ctx context.Context, tgUserID, chatID int64) (domain.
 			return domain.User{}, fmt.Errorf("generate token: %w", err)
 		}
 
-		_, err = s.db.ExecContext(ctx,
-			`INSERT INTO users (tg_user_id, chat_id, link_token, created_at) VALUES (?, ?, ?, ?)`,
-			tgUserID, chatID, tok, now.Unix(),
+		var (
+			u       domain.User
+			created int64
 		)
+		err = s.db.QueryRowContext(ctx,
+			`INSERT INTO users (tg_user_id, chat_id, link_token, created_at) VALUES (?, ?, ?, ?)
+			 ON CONFLICT (tg_user_id) DO UPDATE SET chat_id = excluded.chat_id
+			 RETURNING tg_user_id, chat_id, link_token, created_at`,
+			tgUserID, chatID, tok, now.Unix(),
+		).Scan(&u.TgUserID, &u.ChatID, &u.LinkToken, &created)
 		switch {
 		case err == nil:
-			return domain.User{TgUserID: tgUserID, ChatID: chatID, LinkToken: tok, CreatedAt: now}, nil
+			u.CreatedAt = time.Unix(created, 0).UTC()
+			return u, nil
 		case isUniqueViolation(err):
+			// Only link_token can still collide: tg_user_id is the conflict
+			// target and is absorbed by DO UPDATE. Retry with a fresh token.
 			continue
 		default:
-			return domain.User{}, fmt.Errorf("insert user: %w", err)
+			return domain.User{}, fmt.Errorf("upsert user: %w", err)
 		}
 	}
 	return domain.User{}, errors.New("could not allocate a unique link token")
@@ -267,6 +264,31 @@ func (s *Store) ClearSessionsForOwner(ctx context.Context, ownerUserID int64) (i
 	removed, err := res.RowsAffected()
 	if err != nil {
 		return 0, fmt.Errorf("rows affected: %w", err)
+	}
+	return removed, nil
+}
+
+func (s *Store) ClearRelaysForOwner(ctx context.Context, ownerUserID int64) (int64, error) {
+	removed, err := s.execCount(ctx,
+		`DELETE FROM relays WHERE owner_user_id = ?`, ownerUserID,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("clear relays for owner: %w", err)
+	}
+	return removed, nil
+}
+
+func (s *Store) ClearRelaysForSender(
+	ctx context.Context, senderChatID, ownerUserID int64,
+) (int64, error) {
+	senderRef := s.keys.Ref(senderChatID)
+	removed, err := s.execCount(ctx,
+		`DELETE FROM relays
+		 WHERE owner_user_id = ? AND (dest_ref = ? OR origin_ref = ?)`,
+		ownerUserID, senderRef, senderRef,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("clear relays for sender: %w", err)
 	}
 	return removed, nil
 }

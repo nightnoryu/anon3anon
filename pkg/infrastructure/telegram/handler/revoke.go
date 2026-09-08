@@ -37,5 +37,16 @@ func (d DependencyContainer) revokeLink(ctx context.Context, c telegramClient, m
 		return
 	}
 
+	// Sessions alone do not cut a sender off: replying to a message the bot
+	// already delivered routes through the relay map, which is not session
+	// scoped. Drop those mappings too, at the cost of the owner losing the
+	// ability to answer threads received before the revoke - the two are the
+	// same rows, and revocation is the stronger promise. Both steps are
+	// idempotent, so a failure here is finished by the next /revoke.
+	if _, err := d.Store.ClearRelaysForOwner(ctx, msg.From.ID); err != nil {
+		d.Logger.Error(err)
+		return
+	}
+
 	d.reply(ctx, c, msg.Chat.ID, fmt.Sprintf(newLinkMessageTemplate, buildMyLink(d.BotUsername, newToken)))
 }

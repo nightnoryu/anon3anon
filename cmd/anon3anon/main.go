@@ -117,7 +117,10 @@ func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logg
 	}
 
 	return []bot.Option{
-		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
+		bot.WithMiddlewares(
+			middleware.NewPrivateChatMiddleware(),
+			middleware.NewLoggingMiddleware(logger),
+		),
 		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommand, handler.NewStartCommandHandler(deps)),
 		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommand, handler.NewHelpHandler(deps)),
 		bot.WithMessageTextHandler(handler.CommandMyLink, bot.MatchTypeCommand, handler.NewMyLinkHandler(deps)),

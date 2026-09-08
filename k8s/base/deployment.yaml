@@ -58,6 +58,9 @@ spec:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest
           imagePullPolicy: IfNotPresent
+          ports:
+            - name: health
+              containerPort: 8080
           env:
             - name: ANON3ANON_TELEGRAM_BOT_TOKEN
               valueFrom:
@@ -98,6 +101,22 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
       volumes:
         - name: data
           persistentVolumeClaim:

@@ -23,6 +23,10 @@ type Store interface {
 	// ClearSession drops the sender's routing session so their messages are no
 	// longer relayed anywhere until they open a link again. It is idempotent.
 	ClearSession(ctx context.Context, senderChatID int64) error
+	// ClearSessionsForOwner drops every routing session pointed at ownerUserID,
+	// cutting off senders who already opened a now-revoked link. It is
+	// idempotent and returns the number of sessions removed.
+	ClearSessionsForOwner(ctx context.Context, ownerUserID int64) (int64, error)
 
 	// PutRelay stores a delivered-message mapping.
 	PutRelay(ctx context.Context, r Relay) error

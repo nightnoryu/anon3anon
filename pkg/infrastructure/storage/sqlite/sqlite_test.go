@@ -142,6 +142,42 @@ func TestClearSession(t *testing.T) {
 	require.NoError(t, store.ClearSession(ctx, 555))
 }
 
+func TestClearSessionsForOwner(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	owner, err := store.UpsertUser(ctx, 10, 10)
+	require.NoError(t, err)
+	other, err := store.UpsertUser(ctx, 20, 20)
+	require.NoError(t, err)
+
+	require.NoError(t, store.SetSession(ctx, 501, owner.TgUserID))
+	require.NoError(t, store.SetSession(ctx, 502, owner.TgUserID))
+	require.NoError(t, store.SetSession(ctx, 503, other.TgUserID))
+
+	removed, err := store.ClearSessionsForOwner(ctx, owner.TgUserID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), removed)
+
+	for _, sender := range []int64{501, 502} {
+		_, ok, err := store.GetSession(ctx, sender)
+		require.NoError(t, err)
+		assert.Falsef(t, ok, "sender %d must be cut off", sender)
+	}
+
+	// Other owners' sessions are untouched.
+	got, ok, err := store.GetSession(ctx, 503)
+	require.NoError(t, err)
+	require.True(t, ok)
+	assert.Equal(t, other.TgUserID, got)
+
+	// Idempotent: no sessions left to clear is not an error.
+	removed, err = store.ClearSessionsForOwner(ctx, owner.TgUserID)
+	require.NoError(t, err)
+	assert.Zero(t, removed)
+}
+
 func TestRelayPutLookupAndUpsert(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

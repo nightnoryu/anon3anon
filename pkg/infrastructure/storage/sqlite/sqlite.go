@@ -192,6 +192,20 @@ func (s *Store) ClearSession(ctx context.Context, senderChatID int64) error {
 	return nil
 }
 
+func (s *Store) ClearSessionsForOwner(ctx context.Context, ownerUserID int64) (int64, error) {
+	res, err := s.db.ExecContext(ctx,
+		`DELETE FROM sessions WHERE owner_user_id = ?`, ownerUserID,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("clear sessions for owner: %w", err)
+	}
+	removed, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("rows affected: %w", err)
+	}
+	return removed, nil
+}
+
 func (s *Store) PutRelay(ctx context.Context, r domain.Relay) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO relays (dest_chat_id, dest_msg_id, origin_chat_id, owner_user_id, created_at)

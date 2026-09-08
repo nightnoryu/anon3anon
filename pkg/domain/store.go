@@ -20,6 +20,9 @@ type Store interface {
 	SetSession(ctx context.Context, senderChatID, ownerUserID int64) error
 	// GetSession returns the owner a sender's chat is currently messaging.
 	GetSession(ctx context.Context, senderChatID int64) (ownerUserID int64, ok bool, err error)
+	// ClearSession drops the sender's routing session so their messages are no
+	// longer relayed anywhere until they open a link again. It is idempotent.
+	ClearSession(ctx context.Context, senderChatID int64) error
 
 	// PutRelay stores a delivered-message mapping.
 	PutRelay(ctx context.Context, r Relay) error

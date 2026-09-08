@@ -104,6 +104,22 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 	d.reply(ctx, c, msg.Chat.ID, messageSentMessage)
 }
 
+func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, msg *models.Message) {
+	if _, ok, err := d.Store.GetSession(ctx, msg.Chat.ID); err != nil {
+		d.Logger.Error(err)
+		return
+	} else if !ok {
+		d.reply(ctx, c, msg.Chat.ID, noSessionToStopMessage)
+		return
+	}
+
+	if err := d.Store.ClearSession(ctx, msg.Chat.ID); err != nil {
+		d.Logger.Error(err)
+		return
+	}
+	d.reply(ctx, c, msg.Chat.ID, stoppedMessage)
+}
+
 // relay copies src into destChatID and records the mapping needed to route a
 // reply back to src's chat.
 func (d DependencyContainer) relay(

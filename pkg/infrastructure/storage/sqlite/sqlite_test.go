@@ -124,6 +124,24 @@ func TestSessionSetGet(t *testing.T) {
 	assert.Equal(t, other.TgUserID, got)
 }
 
+func TestClearSession(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	owner, err := store.UpsertUser(ctx, 10, 10)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 555, owner.TgUserID))
+
+	require.NoError(t, store.ClearSession(ctx, 555))
+	_, ok, err := store.GetSession(ctx, 555)
+	require.NoError(t, err)
+	assert.False(t, ok)
+
+	// Idempotent: clearing a missing session is not an error.
+	require.NoError(t, store.ClearSession(ctx, 555))
+}
+
 func TestRelayPutLookupAndUpsert(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

@@ -13,9 +13,11 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 - **Per-user personal links** - `t.me/<bot>?start=<token>`, with unguessable random tokens
 - **Two-way threaded conversations** - the recipient replies to a delivered message and the answer goes back to the
   original anonymous sender, still anonymous in both directions
+- **`/help`** prints usage instructions for both the recipient and the sender flows
 - **`/revoke`** rotates your link and immediately kills the old one
 - **`/block`** as a reply to a delivered message stops that one anonymous sender from ever reaching you again - other
   senders are unaffected
+- **`/stop`** lets a sender leave the current conversation and clears their routing session
 - **Per-pair rate limiting** - each sender is capped at *N* messages per time window *per recipient*, so one recipient
   getting spammed doesn't affect anyone else
 - **Optional allow list** - restrict who may register as a recipient by Telegram user ID; senders are never restricted
@@ -30,12 +32,14 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 2. Share that link with anyone you want anonymous messages from
 3. Their messages arrive in your chat with the bot. **Reply** to a message to answer its sender
 4. `/mylink` shows the link again, `/revoke` issues a fresh one, `/block` (as a reply) bans a sender
+5. `/help` explains every command
 
 **As a sender**
 
 1. Open someone's personal link (`t.me/<bot>?start=<token>`). The bot confirms you can now write
 2. Send messages normally - they are delivered anonymously to the link's owner
 3. When the owner replies, their answer lands in your chat. Reply to it to continue the thread
+4. `/stop` leaves the conversation - your messages go nowhere until you open a link again
 
 ## 🚀 Hosting
 

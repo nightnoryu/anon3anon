@@ -159,6 +159,9 @@ func (d DependencyContainer) relay(
 			return err
 		}
 		if !allowed {
+			// Over-quota attempts intentionally keep the increment: it is the
+			// sender's own doing. Only a delivery that fails downstream (below)
+			// gets its quota refunded.
 			return errRateLimited
 		}
 	}
@@ -169,6 +172,13 @@ func (d DependencyContainer) relay(
 		MessageID:  src.ID,
 	})
 	if err != nil {
+		// The message never landed; give the quota unit that AllowMessage just
+		// consumed back so a failed delivery does not count against the sender.
+		if rateLimited {
+			if refundErr := d.Store.RefundMessage(ctx, src.Chat.ID, destChatID); refundErr != nil {
+				d.Logger.Error(refundErr)
+			}
+		}
 		return err
 	}
 

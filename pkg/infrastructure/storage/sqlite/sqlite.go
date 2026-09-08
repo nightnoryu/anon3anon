@@ -301,36 +301,56 @@ func (s *Store) LookupRelay(ctx context.Context, destChatID int64, destMsgID int
 	return r, true, nil
 }
 
-func (s *Store) PurgeExpired(ctx context.Context, cutoff time.Time) (sessions, relays int64, err error) {
+func (s *Store) PurgeExpired(ctx context.Context, cutoff time.Time) (domain.PurgeStats, error) {
 	ts := cutoff.UTC().Unix()
 
-	sr, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE updated_at < ?`, ts)
-	if err != nil {
-		return 0, 0, fmt.Errorf("purge sessions: %w", err)
+	var stats domain.PurgeStats
+
+	byTime := []struct {
+		name  string
+		query string
+		into  *int64
+	}{
+		{"sessions", `DELETE FROM sessions WHERE updated_at < ?`, &stats.Sessions},
+		{"relays", `DELETE FROM relays WHERE created_at < ?`, &stats.Relays},
+		{"blocks", `DELETE FROM blocks WHERE created_at < ?`, &stats.Blocks},
 	}
-	sessions, err = sr.RowsAffected()
-	if err != nil {
-		return 0, 0, fmt.Errorf("rows affected: %w", err)
+	for _, d := range byTime {
+		n, err := s.execCount(ctx, d.query, ts)
+		if err != nil {
+			return stats, fmt.Errorf("purge %s: %w", d.name, err)
+		}
+		*d.into = n
 	}
 
-	rr, err := s.db.ExecContext(ctx, `DELETE FROM relays WHERE created_at < ?`, ts)
-	if err != nil {
-		return sessions, 0, fmt.Errorf("purge relays: %w", err)
-	}
-	relays, err = rr.RowsAffected()
-	if err != nil {
-		return sessions, 0, fmt.Errorf("rows affected: %w", err)
+	if s.rateLimitEnabled() {
+		n, err := s.execCount(ctx,
+			`DELETE FROM message_rates WHERE bucket < ?`,
+			ts/int64(s.rateWindow.Seconds()),
+		)
+		if err != nil {
+			return stats, fmt.Errorf("purge message_rates: %w", err)
+		}
+		stats.MessageRates = n
 	}
 
-	return sessions, relays, nil
+	return stats, nil
+}
+
+func (s *Store) execCount(ctx context.Context, query string, args ...any) (int64, error) {
+	res, err := s.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (bool, error) {
-	if s.rateWindow <= 0 || s.rateMax <= 0 {
+	if !s.rateLimitEnabled() {
 		return true, nil
 	}
 
-	bucket := time.Now().UTC().Unix() / int64(s.rateWindow.Seconds())
+	bucket := s.currentBucket()
 
 	if _, err := s.db.ExecContext(ctx,
 		`DELETE FROM message_rates
@@ -353,6 +373,21 @@ func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (
 		return false, fmt.Errorf("bump message rate: %w", err)
 	}
 	return count <= s.rateMax, nil
+}
+
+func (s *Store) RefundMessage(ctx context.Context, senderID, recipientID int64) error {
+	if !s.rateLimitEnabled() {
+		return nil
+	}
+
+	if _, err := s.db.ExecContext(ctx,
+		`UPDATE message_rates SET count = count - 1
+		 WHERE sender_id = ? AND recipient_id = ? AND bucket = ? AND count > 0`,
+		senderID, recipientID, s.currentBucket(),
+	); err != nil {
+		return fmt.Errorf("refund message rate: %w", err)
+	}
+	return nil
 }
 
 func (s *Store) Block(ctx context.Context, ownerUserID, senderChatID int64) error {
@@ -379,6 +414,14 @@ func (s *Store) IsBlocked(ctx context.Context, ownerUserID, senderChatID int64) 
 		return false, fmt.Errorf("query block: %w", err)
 	}
 	return true, nil
+}
+
+func (s *Store) rateLimitEnabled() bool {
+	return s.rateWindow >= time.Second && s.rateMax > 0
+}
+
+func (s *Store) currentBucket() int64 {
+	return time.Now().UTC().Unix() / int64(s.rateWindow.Seconds())
 }
 
 func isUniqueViolation(err error) bool {

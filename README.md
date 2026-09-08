@@ -98,16 +98,16 @@ kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f
 
 All configuration is set via environment variables (prefix `ANON3ANON_`):
 
-| Variable                             | Required | Default              | Description                                                                                                                                                 |
-|--------------------------------------|----------|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ANON3ANON_TELEGRAM_BOT_TOKEN`       | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                                                                                                         |
-| `ANON3ANON_DATABASE_PATH`            | no       | `/data/anon3anon.db` | Path to the SQLite database file                                                                                                                            |
-| `ANON3ANON_ALLOWED_USER_IDS`         | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Can be obtained from [@userinfobot](https://t.me/userinfobot)                        |
-| `ANON3ANON_RATE_LIMIT_WINDOW`        | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting                                                                                            |
-| `ANON3ANON_RATE_LIMIT_MAX`           | no       | `100`                | Max inbound anonymous messages per sender -> recipient per window. Recipient replies are not counted. `0` disables rate limiting                            |
-| `ANON3ANON_HEALTH_ADDR`              | no       | `:8080`              | Listen address for the liveness (`/healthz`) and readiness (`/readyz`) HTTP endpoints                                                                       |
-| `ANON3ANON_RETENTION_AGE`            | no       | `720h`               | Idle age (Go duration) after which a background sweep deletes `sessions` (bumped by each inbound message) and `relays` rows. `0` disables retention pruning |
-| `ANON3ANON_RETENTION_SWEEP_INTERVAL` | no       | `1h`                 | How often the retention sweep runs (Go duration). `0` disables it                                                                                           |
+| Variable                             | Required | Default              | Description                                                                                                                                                                             |
+|--------------------------------------|----------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ANON3ANON_TELEGRAM_BOT_TOKEN`       | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                                                                                                                                     |
+| `ANON3ANON_DATABASE_PATH`            | no       | `/data/anon3anon.db` | Path to the SQLite database file                                                                                                                                                        |
+| `ANON3ANON_ALLOWED_USER_IDS`         | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Can be obtained from [@userinfobot](https://t.me/userinfobot)                                                    |
+| `ANON3ANON_RATE_LIMIT_WINDOW`        | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting                                                                                                                        |
+| `ANON3ANON_RATE_LIMIT_MAX`           | no       | `100`                | Max inbound anonymous messages per sender -> recipient per window. Recipient replies are not counted. `0` disables rate limiting                                                        |
+| `ANON3ANON_HEALTH_ADDR`              | no       | `:8080`              | Listen address for the liveness (`/healthz`) and readiness (`/readyz`) HTTP endpoints                                                                                                   |
+| `ANON3ANON_RETENTION_AGE`            | no       | `720h`               | Idle age (Go duration) after which a background sweep deletes `sessions` (bumped by each inbound message), `relays`, `blocks`, and `message_rates` rows. `0` disables retention pruning |
+| `ANON3ANON_RETENTION_SWEEP_INTERVAL` | no       | `1h`                 | How often the retention sweep runs (Go duration). `0` disables it                                                                                                                       |
 
 ## ⚒️ Local Development
 

@@ -273,20 +273,23 @@ func TestPurgeExpired(t *testing.T) {
 	require.NoError(t, store.PutRelay(ctx, domain.Relay{
 		DestChatID: 7, DestMsgID: 42, OriginChatID: 9, OwnerUserID: owner.TgUserID,
 	}))
+	require.NoError(t, store.Block(ctx, owner.TgUserID, 501))
+	ok, err := store.AllowMessage(ctx, 501, owner.TgUserID)
+	require.NoError(t, err)
+	require.True(t, ok)
 
 	// Nothing is old enough yet.
-	sessions, relays, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Hour))
+	stats, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
-	assert.Zero(t, sessions)
-	assert.Zero(t, relays)
+	assert.Equal(t, domain.PurgeStats{}, stats)
 
-	// Everything now predates the cutoff.
-	sessions, relays, err = store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
+	// Everything now predates the cutoff. The cutoff is pushed a full rate
+	// window ahead so the message_rates bucket index also falls before it.
+	stats, err = store.PurgeExpired(ctx, time.Now().UTC().Add(2*testRateWindow))
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), sessions)
-	assert.Equal(t, int64(1), relays)
+	assert.Equal(t, domain.PurgeStats{Sessions: 1, Relays: 1, Blocks: 1, MessageRates: 1}, stats)
 
-	_, ok, err := store.GetSession(ctx, 501)
+	_, ok, err = store.GetSession(ctx, 501)
 	require.NoError(t, err)
 	assert.False(t, ok, "expired session must be gone")
 
@@ -294,11 +297,90 @@ func TestPurgeExpired(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, ok, "expired relay must be gone")
 
-	// Idempotent: nothing left to purge is not an error.
-	sessions, relays, err = store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
+	blocked, err := store.IsBlocked(ctx, owner.TgUserID, 501)
 	require.NoError(t, err)
-	assert.Zero(t, sessions)
-	assert.Zero(t, relays)
+	assert.False(t, blocked, "expired block must be gone")
+
+	// Idempotent: nothing left to purge is not an error.
+	stats, err = store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
+	require.NoError(t, err)
+	assert.Equal(t, domain.PurgeStats{}, stats)
+}
+
+func TestPurgeExpiredKeepsCurrentMessageRateBucket(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	ok, err := store.AllowMessage(ctx, 1, 2)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	// A cutoff in the past must not touch the live bucket.
+	stats, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-2*testRateWindow))
+	require.NoError(t, err)
+	assert.Zero(t, stats.MessageRates)
+
+	// The quota is still counted: max messages total, so the next is refused.
+	for i := 1; i < testRateMax; i++ {
+		ok, err = store.AllowMessage(ctx, 1, 2)
+		require.NoError(t, err)
+		require.True(t, ok)
+	}
+	ok, err = store.AllowMessage(ctx, 1, 2)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestPurgeExpiredSkipsMessageRatesWhenRateLimitDisabled(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	// A sub-second window counts as disabled; the sweep must not divide by zero.
+	store := newStoreWithRate(t, 500*time.Millisecond, 3)
+
+	stats, err := store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
+	require.NoError(t, err)
+	assert.Zero(t, stats.MessageRates)
+}
+
+func TestRefundMessageReturnsQuota(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t) // window 1h, max 3
+
+	// Fill the quota exactly, then confirm the next message is refused.
+	for i := 1; i <= testRateMax; i++ {
+		ok, err := store.AllowMessage(ctx, 1, 2)
+		require.NoError(t, err)
+		require.True(t, ok)
+	}
+	ok, err := store.AllowMessage(ctx, 1, 2)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	// Two refunds undo the rejected attempt and one accepted one.
+	require.NoError(t, store.RefundMessage(ctx, 1, 2))
+	require.NoError(t, store.RefundMessage(ctx, 1, 2))
+
+	ok, err = store.AllowMessage(ctx, 1, 2)
+	require.NoError(t, err)
+	assert.True(t, ok, "refunded quota is reusable")
+
+	ok, err = store.AllowMessage(ctx, 1, 2)
+	require.NoError(t, err)
+	assert.False(t, ok, "only the refunded slot came back")
+
+	// Refund never drives the count below zero and does not error for a
+	// sender->recipient pair that has no bucket at all.
+	require.NoError(t, store.RefundMessage(ctx, 77, 88))
+}
+
+func TestRefundMessageDisabled(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStoreWithRate(t, testRateWindow, 0)
+
+	require.NoError(t, store.RefundMessage(ctx, 1, 2))
 }
 
 func TestTouchSession(t *testing.T) {
@@ -314,9 +396,9 @@ func TestTouchSession(t *testing.T) {
 	// protects it from a subsequent purge with a cutoff just before now.
 	require.NoError(t, store.TouchSession(ctx, 501))
 
-	sessions, _, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Minute))
+	stats, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Minute))
 	require.NoError(t, err)
-	assert.Zero(t, sessions)
+	assert.Zero(t, stats.Sessions)
 
 	got, ok, err := store.GetSession(ctx, 501)
 	require.NoError(t, err)

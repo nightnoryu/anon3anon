@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS blocks (
     PRIMARY KEY (owner_user_id, sender_chat_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_blocks_created_at ON blocks (created_at);
+
 CREATE TABLE IF NOT EXISTS message_rates (
     sender_id    INTEGER NOT NULL,
     recipient_id INTEGER NOT NULL,
@@ -38,3 +40,5 @@ CREATE TABLE IF NOT EXISTS message_rates (
     count        INTEGER NOT NULL,
     PRIMARY KEY (sender_id, recipient_id, bucket)
 );
+
+CREATE INDEX IF NOT EXISTS idx_message_rates_bucket ON message_rates (bucket);

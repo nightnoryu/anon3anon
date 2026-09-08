@@ -93,11 +93,13 @@ func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Stor
 		}
 
 		cutoff := time.Now().UTC().Add(-conf.RetentionAge)
-		sessions, relays, err := store.PurgeExpired(ctx, cutoff)
-		if sessions > 0 || relays > 0 {
+		stats, err := store.PurgeExpired(ctx, cutoff)
+		if stats.Sessions > 0 || stats.Relays > 0 || stats.Blocks > 0 || stats.MessageRates > 0 {
 			logger.WithFields(log.Fields{
-				"sessions_removed": sessions,
-				"relays_removed":   relays,
+				"sessions_removed":      stats.Sessions,
+				"relays_removed":        stats.Relays,
+				"blocks_removed":        stats.Blocks,
+				"message_rates_removed": stats.MessageRates,
 			}).Info("retention sweep")
 		}
 		if err != nil {

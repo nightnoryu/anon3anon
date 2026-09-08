@@ -280,6 +280,34 @@ func TestRouteToOwnerDeliveryFailure(t *testing.T) {
 	assert.Equal(t, deliveryFailedMessage, c.lastSend())
 }
 
+func TestRouteToOwnerFailedDeliveryDoesNotBurnQuota(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, store := newTestDeps(t) // rate max 3 per window
+
+	owner, err := store.UpsertUser(ctx, 10, 1000)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID))
+
+	// Telegram is down: three attempts all fail and must refund their quota.
+	down := &fakeClient{copyErr: errors.New("telegram down")}
+	for range 3 {
+		d.routeToOwner(ctx, down, testMsg(5, 50, "hi"))
+	}
+	assert.Equal(t, deliveryFailedMessage, down.lastSend())
+
+	// Telegram recovers: the sender still has their full budget.
+	c := &fakeClient{}
+	for range 3 {
+		d.routeToOwner(ctx, c, testMsg(5, 50, "hi again"))
+	}
+	assert.Equal(t, messageSentMessage, c.lastSend())
+	assert.Len(t, c.copies, 3, "no quota was consumed by the failed attempts")
+
+	d.routeToOwner(ctx, c, testMsg(5, 50, "over quota"))
+	assert.Equal(t, rateLimitedMessage, c.lastSend())
+}
+
 func TestTryRouteReplyIgnoresNonReplies(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

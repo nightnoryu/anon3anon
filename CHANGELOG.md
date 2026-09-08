@@ -5,6 +5,8 @@
 - `/delete` command added for recipients to erase their account and all associated data
 - `contact`, `location`/`venue`, `story`, and shared-users/chat messages are now rejected instead of relayed, in both directions
 - commands now match only at the start of a message (`/delete` no longer fires from a mid-text mention)
+- a failed message delivery no longer consumes rate-limit quota
+- the retention sweep now also prunes `blocks` and `message_rates`
 
 ## v0.3.0
 

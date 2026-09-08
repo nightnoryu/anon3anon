@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.0
+
+- `/delete` command added for recipients to erase their account and all associated data
+- `contact`, `location`/`venue`, `story`, and shared-users/chat messages are now rejected instead of relayed, in both directions
+- commands now match only at the start of a message (`/delete` no longer fires from a mid-text mention)
+
 ## v0.3.0
 
 - health and liveness probes added for container

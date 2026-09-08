@@ -10,7 +10,19 @@ import (
 	"anon3anon/pkg/domain"
 )
 
-var errRateLimited = errors.New("rate limited")
+var (
+	errRateLimited        = errors.New("rate limited")
+	errUnsupportedContent = errors.New("unsupported content type")
+)
+
+func hasUnsupportedContent(msg *models.Message) bool {
+	return msg.Contact != nil ||
+		msg.Location != nil ||
+		msg.Venue != nil ||
+		msg.Story != nil ||
+		msg.UsersShared != nil ||
+		msg.ChatShared != nil
+}
 
 // tryRouteReply handles the message when it is a reply to a message the bot
 // previously delivered, routing it back to that message's origin. It reports
@@ -49,6 +61,10 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID, inbound); err != nil {
 		if errors.Is(err, errRateLimited) {
 			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
+			return true
+		}
+		if errors.Is(err, errUnsupportedContent) {
+			d.reply(ctx, c, msg.Chat.ID, unsupportedContentMessage)
 			return true
 		}
 		d.Logger.Error(err)
@@ -97,6 +113,10 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
 			return
 		}
+		if errors.Is(err, errUnsupportedContent) {
+			d.reply(ctx, c, msg.Chat.ID, unsupportedContentMessage)
+			return
+		}
 		d.Logger.Error(err)
 		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
 		return
@@ -129,6 +149,10 @@ func (d DependencyContainer) relay(
 	destChatID, ownerUserID int64,
 	rateLimited bool,
 ) error {
+	if hasUnsupportedContent(src) {
+		return errUnsupportedContent
+	}
+
 	if rateLimited {
 		allowed, err := d.Store.AllowMessage(ctx, src.Chat.ID, destChatID)
 		if err != nil {

@@ -21,7 +21,10 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
   getting spammed doesn't affect anyone else
 - **Optional allow list** - restrict who may register as a recipient by Telegram user ID; senders are never restricted
 - Messages are relayed with `copyMessage`, so any content type (text, photos, files, voice, stickers, etc.) works and
-  no "forwarded from" header leaks the sender
+  no "forwarded from" header leaks the sender - except shared contacts and locations/venues, which are rejected in
+  both directions because they carry PII
+- **`/delete`** erases your account and every row tied to it - link, sessions, relay history, blocks, rate counters -
+  in one irreversible step
 
 ## 💬 How it works
 
@@ -31,7 +34,8 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 2. Share that link with anyone you want anonymous messages from
 3. Their messages arrive in your chat with the bot. **Reply** to a message to answer its sender
 4. `/mylink` shows the link again, `/revoke` issues a fresh one, `/block` (as a reply) bans a sender
-5. `/help` explains every command
+5. `/delete` erases your account and all associated data - irreversible
+6. `/help` explains every command
 
 **As a sender**
 

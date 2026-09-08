@@ -139,6 +139,7 @@ func registerCommands(ctx context.Context, b *bot.Bot) error {
 			{Command: handler.CommandRevoke, Description: "Отозвать ссылку и выпустить новую"},
 			{Command: handler.CommandBlock, Description: "Ответом на сообщение - заблокировать отправителя"},
 			{Command: handler.CommandStop, Description: "Выйти из текущей переписки"},
+			{Command: handler.CommandDelete, Description: "Удалить аккаунт и все связанные данные"},
 		},
 	})
 	return err
@@ -162,12 +163,13 @@ func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logg
 			middleware.NewPrivateChatMiddleware(),
 			middleware.NewLoggingMiddleware(logger),
 		),
-		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommand, handler.NewStartCommandHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommand, handler.NewHelpHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandMyLink, bot.MatchTypeCommand, handler.NewMyLinkHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandRevoke, bot.MatchTypeCommand, handler.NewRevokeHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandBlock, bot.MatchTypeCommand, handler.NewBlockHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandStop, bot.MatchTypeCommand, handler.NewStopHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommandStartOnly, handler.NewStartCommandHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommandStartOnly, handler.NewHelpHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandMyLink, bot.MatchTypeCommandStartOnly, handler.NewMyLinkHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandRevoke, bot.MatchTypeCommandStartOnly, handler.NewRevokeHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandBlock, bot.MatchTypeCommandStartOnly, handler.NewBlockHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandStop, bot.MatchTypeCommandStartOnly, handler.NewStopHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandDelete, bot.MatchTypeCommandStartOnly, handler.NewDeleteHandler(deps)),
 		bot.WithDefaultHandler(handler.NewMessageRouter(deps)),
 	}, nil
 }

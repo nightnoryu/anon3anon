@@ -7,4 +7,5 @@ const (
 	CommandRevoke = "revoke"
 	CommandBlock  = "block"
 	CommandStop   = "stop"
+	CommandDelete = "delete"
 )

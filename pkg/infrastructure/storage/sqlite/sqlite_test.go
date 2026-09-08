@@ -178,6 +178,90 @@ func TestClearSessionsForOwner(t *testing.T) {
 	assert.Zero(t, removed)
 }
 
+func TestDeleteUserCascades(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	owner, err := store.UpsertUser(ctx, 10, 10)
+	require.NoError(t, err)
+	keep, err := store.UpsertUser(ctx, 99, 99)
+	require.NoError(t, err)
+
+	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID)) // sender -> owner
+	require.NoError(t, store.SetSession(ctx, 10, keep.TgUserID))  // owner acting as a sender
+	require.NoError(t, store.SetSession(ctx, 51, keep.TgUserID))  // unrelated
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 10, DestMsgID: 1, OriginChatID: 50, OwnerUserID: owner.TgUserID,
+	}))
+	require.NoError(t, store.Block(ctx, owner.TgUserID, 50))
+	require.NoError(t, store.Block(ctx, keep.TgUserID, 10)) // someone blocked the owner-as-sender
+	_, err = store.AllowMessage(ctx, 50, owner.TgUserID)
+	require.NoError(t, err)
+
+	deleted, err := store.DeleteUser(ctx, owner.TgUserID)
+	require.NoError(t, err)
+	assert.True(t, deleted)
+
+	_, ok, err := store.UserByID(ctx, owner.TgUserID)
+	require.NoError(t, err)
+	assert.False(t, ok)
+
+	for _, s := range []int64{50, 10} {
+		_, sok, serr := store.GetSession(ctx, s)
+		require.NoError(t, serr)
+		assert.Falsef(t, sok, "session %d must be gone", s)
+	}
+	_, ok, err = store.LookupRelay(ctx, 10, 1)
+	require.NoError(t, err)
+	assert.False(t, ok, "owner's relay must be gone")
+
+	blocked, err := store.IsBlocked(ctx, owner.TgUserID, 50)
+	require.NoError(t, err)
+	assert.False(t, blocked)
+	blocked, err = store.IsBlocked(ctx, keep.TgUserID, 10)
+	require.NoError(t, err)
+	assert.False(t, blocked, "blocks against the deleted user's chat must be gone")
+
+	// Unrelated rows survive.
+	got, ok, err := store.GetSession(ctx, 51)
+	require.NoError(t, err)
+	require.True(t, ok)
+	assert.Equal(t, keep.TgUserID, got)
+
+	// Idempotent.
+	deleted, err = store.DeleteUser(ctx, owner.TgUserID)
+	require.NoError(t, err)
+	assert.False(t, deleted)
+}
+
+func TestDeleteUserIgnoresNonRecipients(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	owner, err := store.UpsertUser(ctx, 10, 10)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID))
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 10, DestMsgID: 1, OriginChatID: 50, OwnerUserID: owner.TgUserID,
+	}))
+
+	// Sender 50 has no user record: /delete from them must touch nothing.
+	deleted, err := store.DeleteUser(ctx, 50)
+	require.NoError(t, err)
+	assert.False(t, deleted)
+
+	got, ok, err := store.GetSession(ctx, 50)
+	require.NoError(t, err)
+	require.True(t, ok, "the sender's live session must survive their no-op /delete")
+	assert.Equal(t, owner.TgUserID, got)
+
+	_, ok, err = store.LookupRelay(ctx, 10, 1)
+	require.NoError(t, err)
+	assert.True(t, ok, "the recipient's relay row must survive")
+}
+
 func TestPurgeExpired(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

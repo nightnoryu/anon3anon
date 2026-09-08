@@ -18,6 +18,13 @@ type Store interface {
 
 	RotateToken(ctx context.Context, tgUserID int64) (string, error)
 
+	// DeleteUser erases the recipient tgUserID and every row tied to them or to
+	// their chat: their user record, routing sessions in both directions, relay
+	// mappings, blocks, and rate-limit buckets. It is a no-op for a tgUserID
+	// that is not a registered recipient. It is idempotent and reports whether a
+	// user record was deleted.
+	DeleteUser(ctx context.Context, tgUserID int64) (deleted bool, err error)
+
 	// SetSession points a sender's chat at the owner they are currently
 	// messaging (the last link they opened wins).
 	SetSession(ctx context.Context, senderChatID, ownerUserID int64) error

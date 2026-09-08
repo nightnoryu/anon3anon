@@ -155,6 +155,57 @@ func (s *Store) RotateToken(ctx context.Context, tgUserID int64) (string, error)
 	return "", errors.New("could not allocate a unique link token")
 }
 
+func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("begin delete user: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Resolve the account first. Nothing is deleted for a caller who is not a
+	// registered recipient: the related-row filters below also match plain
+	// senders, and wiping a stranger's live session/relays on a no-op /delete
+	// would be silent cross-user state destruction.
+	var chatID int64
+	err = tx.QueryRowContext(ctx,
+		`SELECT chat_id FROM users WHERE tg_user_id = ?`, tgUserID,
+	).Scan(&chatID)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return false, nil
+	case err != nil:
+		return false, fmt.Errorf("lookup user: %w", err)
+	}
+
+	// sessions.owner_user_id references users, so sessions must go before the
+	// users row. Match both roles: rows pointed at this owner and rows for this
+	// user's own chat as a sender. chat_id == tg_user_id for private chats, but
+	// use the stored value so this stays correct if that ever changes.
+	stmts := []struct {
+		query string
+		args  []any
+	}{
+		{`DELETE FROM sessions WHERE owner_user_id = ? OR sender_chat_id = ?`, []any{tgUserID, chatID}},
+		{`DELETE FROM relays WHERE owner_user_id = ? OR dest_chat_id = ? OR origin_chat_id = ?`, []any{tgUserID, chatID, chatID}},
+		{`DELETE FROM blocks WHERE owner_user_id = ? OR sender_chat_id = ?`, []any{tgUserID, chatID}},
+		{`DELETE FROM message_rates WHERE recipient_id = ? OR recipient_id = ? OR sender_id = ?`, []any{tgUserID, chatID, chatID}},
+	}
+	for _, st := range stmts {
+		if _, execErr := tx.ExecContext(ctx, st.query, st.args...); execErr != nil {
+			return false, fmt.Errorf("delete user rows: %w", execErr)
+		}
+	}
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM users WHERE tg_user_id = ?`, tgUserID); err != nil {
+		return false, fmt.Errorf("delete user: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("commit delete user: %w", err)
+	}
+	return true, nil
+}
+
 func (s *Store) SetSession(ctx context.Context, senderChatID, ownerUserID int64) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO sessions (sender_chat_id, owner_user_id, updated_at) VALUES (?, ?, ?)

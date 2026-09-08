@@ -11,6 +11,8 @@ services:
       ANON3ANON_RATE_LIMIT_WINDOW: "1h"
       ANON3ANON_RATE_LIMIT_MAX: "100"
       ANON3ANON_HEALTH_ADDR: ":8080"
+      ANON3ANON_RETENTION_AGE: "720h"
+      ANON3ANON_RETENTION_SWEEP_INTERVAL: "1h"
     volumes:
       - "./bin:/app/bin"
       - "anon3anon-data:/data"

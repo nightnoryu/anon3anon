@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.0
+
+- sender identifiers are pseudonymized at rest: `sessions`, `relays`, `blocks`, and `message_rates` now store a keyed
+  reference derived from the sender's chat ID instead of the ID itself, so the database alone no longer links a
+  conversation to a Telegram account
+- `ANON3ANON_PSEUDONYM_KEY` is now required for pseudonymisation
+- message text, usernames, and raw user IDs are no longer logged at the default level; they moved to `debug`
+- `ANON3ANON_LOG_LEVEL` added (`debug`, `info`, `warn`, `error`; default `info`)
+
 ## v0.4.0
 
 - `/delete` command added for recipients to erase their account and all associated data

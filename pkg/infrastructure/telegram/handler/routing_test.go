@@ -208,6 +208,63 @@ func TestRouteToOwnerRateLimited(t *testing.T) {
 	assert.Len(t, c.copies, 3, "over-quota message must not be delivered")
 }
 
+func TestTryRouteReplyOwnerRepliesAreNotRateLimited(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, store := newTestDeps(t) // rate max 3 per window
+
+	owner, err := store.UpsertUser(ctx, 10, 1000)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID))
+
+	c := &fakeClient{}
+	d.routeToOwner(ctx, c, testMsg(5, 50, "hello owner"))
+	deliveredID := c.nextMsgID
+
+	// Owner answers the same sender well past RATE_LIMIT_MAX times.
+	for range 10 {
+		reply := testMsg(owner.TgUserID, owner.ChatID, "answer")
+		reply.ReplyToMessage = &models.Message{ID: deliveredID}
+		require.True(t, d.tryRouteReply(ctx, c, reply))
+	}
+
+	assert.Equal(t, replySentMessage, c.lastSend())
+	assert.Len(t, c.copies, 11, "every owner reply must be delivered")
+}
+
+func TestTryRouteReplyInboundRepliesStayRateLimited(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, store := newTestDeps(t) // rate max 3 per window
+
+	owner, err := store.UpsertUser(ctx, 10, 1000)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID))
+
+	c := &fakeClient{}
+	// First inbound message (quota 1/3), then an owner reply so the sender has
+	// something to reply to.
+	d.routeToOwner(ctx, c, testMsg(5, 50, "hi"))
+	deliveredID := c.nextMsgID
+	ownerReply := testMsg(owner.TgUserID, owner.ChatID, "hi back")
+	ownerReply.ReplyToMessage = &models.Message{ID: deliveredID}
+	require.True(t, d.tryRouteReply(ctx, c, ownerReply))
+	relayedID := c.nextMsgID
+
+	// Sender replies via the reply path: quota reaches 3, then the 4th is refused.
+	for range 2 {
+		r := testMsg(5, 50, "more")
+		r.ReplyToMessage = &models.Message{ID: relayedID}
+		require.True(t, d.tryRouteReply(ctx, c, r))
+	}
+	assert.Equal(t, replySentMessage, c.lastSend())
+
+	over := testMsg(5, 50, "over quota")
+	over.ReplyToMessage = &models.Message{ID: relayedID}
+	require.True(t, d.tryRouteReply(ctx, c, over))
+	assert.Equal(t, rateLimitedMessage, c.lastSend())
+}
+
 func TestRouteToOwnerDeliveryFailure(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

@@ -29,7 +29,12 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 		return false
 	}
 
-	if msg.From.ID != relay.OwnerUserID {
+	// A reply from the owner is an outbound answer to an anonymous sender; a
+	// reply from anyone else is an inbound anonymous message. Only inbound
+	// messages count against the rate limit.
+	inbound := msg.From.ID != relay.OwnerUserID
+
+	if inbound {
 		blocked, err := d.Store.IsBlocked(ctx, relay.OwnerUserID, msg.Chat.ID)
 		if err != nil {
 			d.Logger.Error(err)
@@ -41,7 +46,7 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 		}
 	}
 
-	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID); err != nil {
+	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID, inbound); err != nil {
 		if errors.Is(err, errRateLimited) {
 			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
 			return true
@@ -87,7 +92,7 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 		return
 	}
 
-	if err := d.relay(ctx, c, msg, owner.ChatID, owner.TgUserID); err != nil {
+	if err := d.relay(ctx, c, msg, owner.ChatID, owner.TgUserID, true); err != nil {
 		if errors.Is(err, errRateLimited) {
 			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
 			return
@@ -102,14 +107,20 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 // relay copies src into destChatID and records the mapping needed to route a
 // reply back to src's chat.
 func (d DependencyContainer) relay(
-	ctx context.Context, c telegramClient, src *models.Message, destChatID, ownerUserID int64,
+	ctx context.Context,
+	c telegramClient,
+	src *models.Message,
+	destChatID, ownerUserID int64,
+	rateLimited bool,
 ) error {
-	allowed, err := d.Store.AllowMessage(ctx, src.Chat.ID, destChatID)
-	if err != nil {
-		return err
-	}
-	if !allowed {
-		return errRateLimited
+	if rateLimited {
+		allowed, err := d.Store.AllowMessage(ctx, src.Chat.ID, destChatID)
+		if err != nil {
+			return err
+		}
+		if !allowed {
+			return errRateLimited
+		}
 	}
 
 	copied, err := c.CopyMessage(ctx, &bot.CopyMessageParams{

@@ -51,6 +51,10 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+func (s *Store) Ping(ctx context.Context) error {
+	return s.db.PingContext(ctx)
+}
+
 func (s *Store) UpsertUser(ctx context.Context, tgUserID, chatID int64) (domain.User, error) {
 	existing, ok, err := s.UserByID(ctx, tgUserID)
 	if err != nil {

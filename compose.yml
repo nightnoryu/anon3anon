@@ -10,6 +10,7 @@ services:
       ANON3ANON_DATABASE_PATH: /data/anon3anon.db
       ANON3ANON_RATE_LIMIT_WINDOW: "1h"
       ANON3ANON_RATE_LIMIT_MAX: "100"
+      ANON3ANON_HEALTH_ADDR: ":8080"
     volumes:
       - "./bin:/app/bin"
       - "anon3anon-data:/data"

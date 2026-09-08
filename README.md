@@ -13,12 +13,10 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 - **Per-user personal links** - `t.me/<bot>?start=<token>`, with unguessable random tokens
 - **Two-way threaded conversations** - the recipient replies to a delivered message and the answer goes back to the
   original anonymous sender, still anonymous in both directions
-- **`/help`** prints usage instructions for both the recipient and the sender flows
 - **`/revoke`** rotates your link, kills the old one, and drops every routing session opened through it, so senders
   who already had the link can no longer reach you
 - **`/block`** as a reply to a delivered message stops that one anonymous sender from ever reaching you again - other
   senders are unaffected
-- **`/stop`** lets a sender leave the current conversation and clears their routing session
 - **Per-pair rate limiting** - each sender is capped at *N* messages per time window *per recipient*, so one recipient
   getting spammed doesn't affect anyone else
 - **Optional allow list** - restrict who may register as a recipient by Telegram user ID; senders are never restricted

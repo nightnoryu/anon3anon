@@ -73,6 +73,11 @@ spec:
                   name: anon3anon-secrets
                   key: ANON3ANON_ALLOWED_USER_IDS
                   optional: true
+            - name: ANON3ANON_PSEUDONYM_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: anon3anon-secrets
+                  key: ANON3ANON_PSEUDONYM_KEY
             - name: ANON3ANON_DATABASE_PATH
               value: /data/anon3anon.db
             - name: ANON3ANON_RATE_LIMIT_WINDOW
@@ -97,6 +102,11 @@ spec:
                 configMapKeyRef:
                   name: anon3anon-config
                   key: ANON3ANON_RETENTION_SWEEP_INTERVAL
+            - name: ANON3ANON_LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: anon3anon-config
+                  key: ANON3ANON_LOG_LEVEL
             - name: HTTP_PROXY
               value: socks5://127.0.0.1:1080
             - name: HTTPS_PROXY

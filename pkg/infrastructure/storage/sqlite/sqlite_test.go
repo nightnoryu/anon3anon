@@ -1,6 +1,7 @@
 package sqlite_test
 
 import (
+	"bytes"
 	"context"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 
 	"anon3anon/pkg/domain"
 	"anon3anon/pkg/infrastructure/storage/sqlite"
+	"anon3anon/pkg/pseudonym"
 )
 
 const (
@@ -23,9 +25,16 @@ func newStore(t *testing.T) *sqlite.Store {
 	return newStoreWithRate(t, testRateWindow, testRateMax)
 }
 
+func newTestKeyring(t *testing.T) *pseudonym.Keyring {
+	t.Helper()
+	keys, err := pseudonym.NewKeyring(bytes.Repeat([]byte("k"), pseudonym.MinKeyLen))
+	require.NoError(t, err)
+	return keys
+}
+
 func newStoreWithRate(t *testing.T, window time.Duration, maxRate int) *sqlite.Store {
 	t.Helper()
-	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), window, maxRate)
+	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), window, maxRate, newTestKeyring(t))
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, store.Close()) })
 	return store

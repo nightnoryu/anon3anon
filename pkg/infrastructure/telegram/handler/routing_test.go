@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"anon3anon/pkg/infrastructure/storage/sqlite"
+	"anon3anon/pkg/pseudonym"
 )
 
 type noopLogger struct{}
@@ -53,7 +55,10 @@ func (f *fakeClient) lastSend() string {
 
 func newTestDeps(t *testing.T, allowed ...int64) (DependencyContainer, *sqlite.Store) {
 	t.Helper()
-	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), time.Hour, 3)
+	keys, err := pseudonym.NewKeyring(bytes.Repeat([]byte("k"), pseudonym.MinKeyLen))
+	require.NoError(t, err)
+
+	store, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"), time.Hour, 3, keys)
 	require.NoError(t, err)
 	t.Cleanup(func() { assert.NoError(t, store.Close()) })
 

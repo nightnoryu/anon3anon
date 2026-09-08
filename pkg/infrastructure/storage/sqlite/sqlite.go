@@ -12,6 +12,7 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 
 	"anon3anon/pkg/domain"
+	"anon3anon/pkg/pseudonym"
 	"anon3anon/pkg/token"
 )
 
@@ -22,11 +23,12 @@ const tokenAttempts = 5
 
 type Store struct {
 	db         *sql.DB
+	keys       *pseudonym.Keyring
 	rateWindow time.Duration
 	rateMax    int
 }
 
-func Open(path string, rateWindow time.Duration, rateMax int) (*Store, error) {
+func Open(path string, rateWindow time.Duration, rateMax int, keys *pseudonym.Keyring) (*Store, error) {
 	dsn := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)",
 		path,
@@ -44,7 +46,7 @@ func Open(path string, rateWindow time.Duration, rateMax int) (*Store, error) {
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
 
-	return &Store{db: db, rateWindow: rateWindow, rateMax: rateMax}, nil
+	return &Store{db: db, keys: keys, rateWindow: rateWindow, rateMax: rateMax}, nil
 }
 
 func (s *Store) Close() error {
@@ -180,15 +182,17 @@ func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 	// sessions.owner_user_id references users, so sessions must go before the
 	// users row. Match both roles: rows pointed at this owner and rows for this
 	// user's own chat as a sender. chat_id == tg_user_id for private chats, but
-	// use the stored value so this stays correct if that ever changes.
+	// use the stored value so this stays correct if that ever changes. The
+	// sender side is matched by reference because that is all the rows hold.
+	chatRef := s.keys.Ref(chatID)
 	stmts := []struct {
 		query string
 		args  []any
 	}{
-		{`DELETE FROM sessions WHERE owner_user_id = ? OR sender_chat_id = ?`, []any{tgUserID, chatID}},
-		{`DELETE FROM relays WHERE owner_user_id = ? OR dest_chat_id = ? OR origin_chat_id = ?`, []any{tgUserID, chatID, chatID}},
-		{`DELETE FROM blocks WHERE owner_user_id = ? OR sender_chat_id = ?`, []any{tgUserID, chatID}},
-		{`DELETE FROM message_rates WHERE recipient_id = ? OR recipient_id = ? OR sender_id = ?`, []any{tgUserID, chatID, chatID}},
+		{`DELETE FROM sessions WHERE owner_user_id = ? OR sender_ref = ?`, []any{tgUserID, chatRef}},
+		{`DELETE FROM relays WHERE owner_user_id = ? OR dest_ref = ? OR origin_ref = ?`, []any{tgUserID, chatRef, chatRef}},
+		{`DELETE FROM blocks WHERE owner_user_id = ? OR sender_ref = ?`, []any{tgUserID, chatRef}},
+		{`DELETE FROM message_rates WHERE recipient_id = ? OR recipient_id = ? OR sender_ref = ?`, []any{tgUserID, chatID, chatRef}},
 	}
 	for _, st := range stmts {
 		if _, execErr := tx.ExecContext(ctx, st.query, st.args...); execErr != nil {
@@ -208,10 +212,10 @@ func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 
 func (s *Store) SetSession(ctx context.Context, senderChatID, ownerUserID int64) error {
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO sessions (sender_chat_id, owner_user_id, updated_at) VALUES (?, ?, ?)
-		 ON CONFLICT (sender_chat_id) DO UPDATE SET owner_user_id = excluded.owner_user_id,
-		                                            updated_at    = excluded.updated_at`,
-		senderChatID, ownerUserID, time.Now().UTC().Unix(),
+		`INSERT INTO sessions (sender_ref, owner_user_id, updated_at) VALUES (?, ?, ?)
+		 ON CONFLICT (sender_ref) DO UPDATE SET owner_user_id = excluded.owner_user_id,
+		                                        updated_at    = excluded.updated_at`,
+		s.keys.Ref(senderChatID), ownerUserID, time.Now().UTC().Unix(),
 	)
 	if err != nil {
 		return fmt.Errorf("set session: %w", err)
@@ -223,7 +227,7 @@ func (s *Store) GetSession(
 	ctx context.Context, senderChatID int64,
 ) (ownerUserID int64, ok bool, err error) {
 	err = s.db.QueryRowContext(ctx,
-		`SELECT owner_user_id FROM sessions WHERE sender_chat_id = ?`, senderChatID,
+		`SELECT owner_user_id FROM sessions WHERE sender_ref = ?`, s.keys.Ref(senderChatID),
 	).Scan(&ownerUserID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
@@ -236,8 +240,8 @@ func (s *Store) GetSession(
 
 func (s *Store) TouchSession(ctx context.Context, senderChatID int64) error {
 	if _, err := s.db.ExecContext(ctx,
-		`UPDATE sessions SET updated_at = ? WHERE sender_chat_id = ?`,
-		time.Now().UTC().Unix(), senderChatID,
+		`UPDATE sessions SET updated_at = ? WHERE sender_ref = ?`,
+		time.Now().UTC().Unix(), s.keys.Ref(senderChatID),
 	); err != nil {
 		return fmt.Errorf("touch session: %w", err)
 	}
@@ -246,7 +250,7 @@ func (s *Store) TouchSession(ctx context.Context, senderChatID int64) error {
 
 func (s *Store) ClearSession(ctx context.Context, senderChatID int64) error {
 	if _, err := s.db.ExecContext(ctx,
-		`DELETE FROM sessions WHERE sender_chat_id = ?`, senderChatID,
+		`DELETE FROM sessions WHERE sender_ref = ?`, s.keys.Ref(senderChatID),
 	); err != nil {
 		return fmt.Errorf("clear session: %w", err)
 	}
@@ -268,14 +272,21 @@ func (s *Store) ClearSessionsForOwner(ctx context.Context, ownerUserID int64) (i
 }
 
 func (s *Store) PutRelay(ctx context.Context, r domain.Relay) error {
-	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO relays (dest_chat_id, dest_msg_id, origin_chat_id, owner_user_id, created_at)
-		 VALUES (?, ?, ?, ?, ?)
-		 ON CONFLICT (dest_chat_id, dest_msg_id) DO UPDATE SET
-		     origin_chat_id = excluded.origin_chat_id,
-		     owner_user_id  = excluded.owner_user_id,
-		     created_at     = excluded.created_at`,
-		r.DestChatID, r.DestMsgID, r.OriginChatID, r.OwnerUserID, time.Now().UTC().Unix(),
+	originSeal, err := s.keys.Seal(r.OriginChatID)
+	if err != nil {
+		return fmt.Errorf("put relay: %w", err)
+	}
+
+	_, err = s.db.ExecContext(ctx,
+		`INSERT INTO relays (dest_ref, dest_msg_id, origin_ref, origin_seal, owner_user_id, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?)
+		 ON CONFLICT (dest_ref, dest_msg_id) DO UPDATE SET
+		     origin_ref    = excluded.origin_ref,
+		     origin_seal   = excluded.origin_seal,
+		     owner_user_id = excluded.owner_user_id,
+		     created_at    = excluded.created_at`,
+		s.keys.Ref(r.DestChatID), r.DestMsgID, s.keys.Ref(r.OriginChatID), originSeal,
+		r.OwnerUserID, time.Now().UTC().Unix(),
 	)
 	if err != nil {
 		return fmt.Errorf("put relay: %w", err)
@@ -285,16 +296,24 @@ func (s *Store) PutRelay(ctx context.Context, r domain.Relay) error {
 
 func (s *Store) LookupRelay(ctx context.Context, destChatID int64, destMsgID int) (domain.Relay, bool, error) {
 	r := domain.Relay{DestChatID: destChatID, DestMsgID: destMsgID}
-	var created int64
+	var (
+		originSeal []byte
+		created    int64
+	)
 	err := s.db.QueryRowContext(ctx,
-		`SELECT origin_chat_id, owner_user_id, created_at FROM relays
-		 WHERE dest_chat_id = ? AND dest_msg_id = ?`,
-		destChatID, destMsgID,
-	).Scan(&r.OriginChatID, &r.OwnerUserID, &created)
+		`SELECT origin_seal, owner_user_id, created_at FROM relays
+		 WHERE dest_ref = ? AND dest_msg_id = ?`,
+		s.keys.Ref(destChatID), destMsgID,
+	).Scan(&originSeal, &r.OwnerUserID, &created)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return domain.Relay{}, false, nil
 	case err != nil:
+		return domain.Relay{}, false, fmt.Errorf("lookup relay: %w", err)
+	}
+
+	r.OriginChatID, err = s.keys.Open(originSeal)
+	if err != nil {
 		return domain.Relay{}, false, fmt.Errorf("lookup relay: %w", err)
 	}
 	r.CreatedAt = time.Unix(created, 0).UTC()
@@ -351,23 +370,24 @@ func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (
 	}
 
 	bucket := s.currentBucket()
+	senderRef := s.keys.Ref(senderID)
 
 	if _, err := s.db.ExecContext(ctx,
 		`DELETE FROM message_rates
-		 WHERE sender_id = ? AND recipient_id = ? AND bucket < ?`,
-		senderID, recipientID, bucket,
+		 WHERE sender_ref = ? AND recipient_id = ? AND bucket < ?`,
+		senderRef, recipientID, bucket,
 	); err != nil {
 		return false, fmt.Errorf("prune message rates: %w", err)
 	}
 
 	var count int
 	err := s.db.QueryRowContext(ctx,
-		`INSERT INTO message_rates (sender_id, recipient_id, bucket, count)
+		`INSERT INTO message_rates (sender_ref, recipient_id, bucket, count)
 		 VALUES (?, ?, ?, 1)
-		 ON CONFLICT (sender_id, recipient_id, bucket)
+		 ON CONFLICT (sender_ref, recipient_id, bucket)
 		 DO UPDATE SET count = count + 1
 		 RETURNING count`,
-		senderID, recipientID, bucket,
+		senderRef, recipientID, bucket,
 	).Scan(&count)
 	if err != nil {
 		return false, fmt.Errorf("bump message rate: %w", err)
@@ -382,8 +402,8 @@ func (s *Store) RefundMessage(ctx context.Context, senderID, recipientID int64) 
 
 	if _, err := s.db.ExecContext(ctx,
 		`UPDATE message_rates SET count = count - 1
-		 WHERE sender_id = ? AND recipient_id = ? AND bucket = ? AND count > 0`,
-		senderID, recipientID, s.currentBucket(),
+		 WHERE sender_ref = ? AND recipient_id = ? AND bucket = ? AND count > 0`,
+		s.keys.Ref(senderID), recipientID, s.currentBucket(),
 	); err != nil {
 		return fmt.Errorf("refund message rate: %w", err)
 	}
@@ -392,9 +412,9 @@ func (s *Store) RefundMessage(ctx context.Context, senderID, recipientID int64) 
 
 func (s *Store) Block(ctx context.Context, ownerUserID, senderChatID int64) error {
 	if _, err := s.db.ExecContext(ctx,
-		`INSERT INTO blocks (owner_user_id, sender_chat_id, created_at) VALUES (?, ?, ?)
-		 ON CONFLICT (owner_user_id, sender_chat_id) DO NOTHING`,
-		ownerUserID, senderChatID, time.Now().UTC().Unix(),
+		`INSERT INTO blocks (owner_user_id, sender_ref, created_at) VALUES (?, ?, ?)
+		 ON CONFLICT (owner_user_id, sender_ref) DO NOTHING`,
+		ownerUserID, s.keys.Ref(senderChatID), time.Now().UTC().Unix(),
 	); err != nil {
 		return fmt.Errorf("insert block: %w", err)
 	}
@@ -404,8 +424,8 @@ func (s *Store) Block(ctx context.Context, ownerUserID, senderChatID int64) erro
 func (s *Store) IsBlocked(ctx context.Context, ownerUserID, senderChatID int64) (bool, error) {
 	var one int
 	err := s.db.QueryRowContext(ctx,
-		`SELECT 1 FROM blocks WHERE owner_user_id = ? AND sender_chat_id = ?`,
-		ownerUserID, senderChatID,
+		`SELECT 1 FROM blocks WHERE owner_user_id = ? AND sender_ref = ?`,
+		ownerUserID, s.keys.Ref(senderChatID),
 	).Scan(&one)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):

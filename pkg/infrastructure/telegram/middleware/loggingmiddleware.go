@@ -6,12 +6,18 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/nightnoryu/go-kita/log"
+
+	"anon3anon/pkg/pseudonym"
 )
 
 const (
+	messageKindText    = "text"
+	messageKindCommand = "command"
+
 	updateIDField    = "update_id"
-	chatIDField      = "chat_id"
+	chatRefField     = "chat_ref"
 	chatTypeField    = "chat_type"
+	chatIDField      = "chat_id"
 	userIDField      = "user_id"
 	usernameField    = "username"
 	messageIDField   = "message_id"
@@ -21,7 +27,7 @@ const (
 	textField        = "text"
 )
 
-func NewLoggingMiddleware(logger log.Logger) bot.Middleware {
+func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring) bot.Middleware {
 	return func(next bot.HandlerFunc) bot.HandlerFunc {
 		return func(ctx context.Context, bot *bot.Bot, update *models.Update) {
 			if update.Message == nil {
@@ -29,47 +35,51 @@ func NewLoggingMiddleware(logger log.Logger) bot.Middleware {
 			}
 
 			msg := update.Message
-
-			text := msg.Text
-			if msg.Caption != "" {
-				text = msg.Caption
-			}
-
 			kind := messageKind(msg)
-
-			var (
-				userID   int64
-				username = msg.Chat.Username
-			)
-			if msg.From != nil {
-				userID = msg.From.ID
-				if msg.From.Username != "" {
-					username = msg.From.Username
-				}
-			}
 
 			logger.WithFields(log.Fields{
 				updateIDField:    update.ID,
-				chatIDField:      msg.Chat.ID,
+				chatRefField:     keys.Ref(msg.Chat.ID),
 				chatTypeField:    string(msg.Chat.Type),
-				userIDField:      userID,
-				usernameField:    username,
 				messageIDField:   msg.ID,
 				messageKindField: kind,
 				isReplyField:     msg.ReplyToMessage != nil,
 				hasMediaField:    kind != messageKindText && kind != messageKindCommand,
-				textField:        text,
 			}).Info("new message")
+
+			logIdentifiableMessage(logger, update, msg)
 
 			next(ctx, bot, update)
 		}
 	}
 }
 
-const (
-	messageKindText    = "text"
-	messageKindCommand = "command"
-)
+func logIdentifiableMessage(logger log.Logger, update *models.Update, msg *models.Message) {
+	text := msg.Text
+	if msg.Caption != "" {
+		text = msg.Caption
+	}
+
+	var (
+		userID   int64
+		username = msg.Chat.Username
+	)
+	if msg.From != nil {
+		userID = msg.From.ID
+		if msg.From.Username != "" {
+			username = msg.From.Username
+		}
+	}
+
+	logger.WithFields(log.Fields{
+		updateIDField:  update.ID,
+		chatIDField:    msg.Chat.ID,
+		userIDField:    userID,
+		usernameField:  username,
+		messageIDField: msg.ID,
+		textField:      text,
+	}).Debug("new message content")
+}
 
 // messageKind classifies a message for logging: a bot command, a specific media
 // type, or plain text.

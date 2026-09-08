@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
-	"net/http"
-	"time"
+	stdlog "log"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -13,23 +11,37 @@ import (
 	"github.com/nightnoryu/go-kita/log"
 	"github.com/nightnoryu/go-kita/runtime"
 
-	"anon3anon/pkg/infrastructure/health"
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 	"anon3anon/pkg/infrastructure/telegram/handler"
 	"anon3anon/pkg/infrastructure/telegram/middleware"
+	"anon3anon/pkg/pseudonym"
 )
 
-const appID = "anon3anon"
+const (
+	appID           = "anon3anon"
+	defaultLogLevel = jsonlog.InfoLevel
+)
 
 func main() {
 	ctx := runtime.ListenOSKillSignals(context.Background())
-	logger := initLogger()
+
 	conf, err := env.ParseEnv[config](appID)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+
+	level, err := parseLogLevel(conf.LogLevel)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+	logger := initLogger(level)
+
+	keys, err := initKeyring(conf.PseudonymKey)
 	if err != nil {
 		logger.FatalError(err)
 	}
 
-	store, err := sqlite.Open(conf.DatabasePath, conf.RateLimitWindow, conf.RateLimitMax)
+	store, err := sqlite.Open(conf.DatabasePath, conf.RateLimitWindow, conf.RateLimitMax, keys)
 	if err != nil {
 		logger.FatalError(err)
 	}
@@ -42,7 +54,7 @@ func main() {
 	startHealthServer(ctx, conf.HealthAddr, store, logger)
 	startRetentionSweeper(ctx, conf, store, logger)
 
-	options, err := initBotOptions(ctx, conf, store, logger)
+	options, err := initBotOptions(ctx, conf, store, keys, logger)
 	if err != nil {
 		logger.FatalError(err)
 	}
@@ -57,79 +69,6 @@ func main() {
 	}
 
 	b.Start(ctx)
-}
-
-func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger) {
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           health.Handler(store),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error(err)
-		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		defer cancel()
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			logger.Error(err)
-		}
-	}()
-}
-
-func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger) {
-	if conf.RetentionAge <= 0 || conf.RetentionSweepInterval <= 0 {
-		return
-	}
-
-	sweep := func() {
-		if ctx.Err() != nil {
-			return
-		}
-
-		cutoff := time.Now().UTC().Add(-conf.RetentionAge)
-		stats, err := store.PurgeExpired(ctx, cutoff)
-		if stats.Sessions > 0 || stats.Relays > 0 || stats.Blocks > 0 || stats.MessageRates > 0 {
-			logger.WithFields(log.Fields{
-				"sessions_removed":      stats.Sessions,
-				"relays_removed":        stats.Relays,
-				"blocks_removed":        stats.Blocks,
-				"message_rates_removed": stats.MessageRates,
-			}).Info("retention sweep")
-		}
-		if err != nil {
-			logger.Error(err)
-		}
-	}
-
-	go func() {
-		sweep()
-
-		ticker := time.NewTicker(conf.RetentionSweepInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				sweep()
-			}
-		}
-	}()
-}
-
-func initLogger() log.MainLogger {
-	logger := jsonlog.NewLogger(&jsonlog.Config{
-		AppName: appID,
-		Level:   jsonlog.InfoLevel,
-	})
-	return logger
 }
 
 func registerCommands(ctx context.Context, b *bot.Bot) error {
@@ -147,7 +86,13 @@ func registerCommands(ctx context.Context, b *bot.Bot) error {
 	return err
 }
 
-func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger) ([]bot.Option, error) {
+func initBotOptions(
+	ctx context.Context,
+	conf *config,
+	store *sqlite.Store,
+	keys *pseudonym.Keyring,
+	logger log.Logger,
+) ([]bot.Option, error) {
 	username, err := resolveBotUsername(ctx, conf.TelegramBotToken)
 	if err != nil {
 		return nil, err
@@ -163,7 +108,7 @@ func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logg
 	return []bot.Option{
 		bot.WithMiddlewares(
 			middleware.NewPrivateChatMiddleware(),
-			middleware.NewLoggingMiddleware(logger),
+			middleware.NewLoggingMiddleware(logger, keys),
 		),
 		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommandStartOnly, handler.NewStartCommandHandler(deps)),
 		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommandStartOnly, handler.NewHelpHandler(deps)),

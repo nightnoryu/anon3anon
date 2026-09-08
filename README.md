@@ -25,6 +25,11 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
   both directions because they carry PII
 - **`/delete`** erases your account and every row tied to it - link, sessions, relay history, blocks, rate counters -
   in one irreversible step
+- **Senders are pseudonymized at rest** - the database never stores an anonymous sender's Telegram ID, only a keyed
+  reference to it, so a stolen database file, volume snapshot, or backup cannot name who wrote to whom without the
+  key, which lives in the deployment's secret store
+- **Message content stays out of the logs** - at the default log level nothing that identifies a sender or repeats
+  what they wrote is written to stdout
 
 ## 💬 How it works
 
@@ -55,10 +60,16 @@ Just run the pre-built image:
 ```shell
 docker run -d --name anon3anon \
   -e ANON3ANON_TELEGRAM_BOT_TOKEN=123:ABC \
+  -e ANON3ANON_PSEUDONYM_KEY="$(openssl rand -base64 32)" \
   -e ANON3ANON_ALLOWED_USER_IDS=123,456 \
   -v anon3anon-data:/data \
   ghcr.io/nightnoryu/anon3anon:latest
 ```
+
+> **Keep `ANON3ANON_PSEUDONYM_KEY` safe and stable.** It is what stops the database from naming its own users, so
+> store it wherever your other secrets live - never on the data volume next to the database. Losing it or changing it
+> does not corrupt anything, but every session, block, and relay written under the old key stops matching: senders
+> have to reopen their link and blocks have to be reissued.
 
 Or with docker-compose:
 
@@ -70,6 +81,7 @@ services:
     restart: unless-stopped
     environment:
       ANON3ANON_TELEGRAM_BOT_TOKEN: "123:ABC"
+      ANON3ANON_PSEUDONYM_KEY: "<output of: openssl rand -base64 32>"
       ANON3ANON_ALLOWED_USER_IDS: "123,456"
     volumes:
       - "anon3anon-data:/data"
@@ -88,7 +100,8 @@ volumes:
 - A [Cloudflare WARP](https://github.com/cmj2002/warp-docker) init container gives the app a SOCKS5 proxy for Telegram
   egress where the API is blocked
 
-Replace the sops-encoded secrets with yours and apply the `prod` overlay:
+The secret must carry `ANON3ANON_TELEGRAM_BOT_TOKEN` and `ANON3ANON_PSEUDONYM_KEY`; the deployment refuses to start
+without either. Replace the sops-encoded secrets with yours and apply the `prod` overlay:
 
 ```shell
 kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
@@ -101,6 +114,7 @@ All configuration is set via environment variables (prefix `ANON3ANON_`):
 | Variable                             | Required | Default              | Description                                                                                                                                                                             |
 |--------------------------------------|----------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `ANON3ANON_TELEGRAM_BOT_TOKEN`       | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                                                                                                                                     |
+| `ANON3ANON_PSEUDONYM_KEY`            | yes      | —                    | Key used to pseudonymize sender identifiers at rest, as base64 or hex, at least 32 bytes. Generate with `openssl rand -base64 32`, keep it off the data volume, and keep it stable      |
 | `ANON3ANON_DATABASE_PATH`            | no       | `/data/anon3anon.db` | Path to the SQLite database file                                                                                                                                                        |
 | `ANON3ANON_ALLOWED_USER_IDS`         | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Can be obtained from [@userinfobot](https://t.me/userinfobot)                                                    |
 | `ANON3ANON_RATE_LIMIT_WINDOW`        | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting                                                                                                                        |
@@ -108,6 +122,7 @@ All configuration is set via environment variables (prefix `ANON3ANON_`):
 | `ANON3ANON_HEALTH_ADDR`              | no       | `:8080`              | Listen address for the liveness (`/healthz`) and readiness (`/readyz`) HTTP endpoints                                                                                                   |
 | `ANON3ANON_RETENTION_AGE`            | no       | `720h`               | Idle age (Go duration) after which a background sweep deletes `sessions` (bumped by each inbound message), `relays`, `blocks`, and `message_rates` rows. `0` disables retention pruning |
 | `ANON3ANON_RETENTION_SWEEP_INTERVAL` | no       | `1h`                 | How often the retention sweep runs (Go duration). `0` disables it                                                                                                                       |
+| `ANON3ANON_LOG_LEVEL`                | no       | `info`               | `debug`, `info`, `warn` or `error`. **`debug` logs message text, usernames, and raw user IDs** - use it only while diagnosing a problem                                                 |
 
 ## ⚒️ Local Development
 

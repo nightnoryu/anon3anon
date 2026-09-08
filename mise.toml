@@ -42,7 +42,7 @@ run = "go mod download"
 
 [tasks.build]
 depends = [ "modules" ]
-run = "go build -trimpath -v --gcflags 'all=-N -l' -o ./bin/anon3anon ./cmd/anon3anon"
+run = "go build -trimpath -v -o ./bin/anon3anon ./cmd/anon3anon"
 
 # Checks
 

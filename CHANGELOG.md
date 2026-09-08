@@ -2,6 +2,13 @@
 
 ## v1.0.0
 
+- `/revoke` now also drops the revoking recipient's relay map
+- `/stop` now also drops the relay map for the conversation being left, in both directions
+- concurrent `/start` from the same user no longer fails with a spurious "could not allocate a unique link token"
+- a message that was delivered is no longer reported as a delivery failure
+- `/readyz` no longer echoes the storage error into its response body - a driver error names the database path
+- the container runs as an unprivileged user (uid/gid `10001`) on a pinned, digest-addressed base image, with a
+  read-only root filesystem, no capabilities, no privilege escalation, and the `RuntimeDefault` seccomp profile
 - sender identifiers are pseudonymized at rest: `sessions`, `relays`, `blocks`, and `message_rates` now store a keyed
   reference derived from the sender's chat ID instead of the ID itself, so the database alone no longer links a
   conversation to a Telegram account

@@ -18,6 +18,7 @@ spec:
         app: anon3anon
     spec:
       securityContext:
+        fsGroup: 10001
         sysctls:
           - name: net.ipv4.conf.all.src_valid_mark
             value: "1"
@@ -58,6 +59,10 @@ spec:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
           ports:
             - name: health
               containerPort: 8080

@@ -1,12 +1,13 @@
 # anon3anon
 
+_Talk without trading identities._
+
 <a href="https://github.com/nightnoryu/anon3anon/releases"><img src="https://img.shields.io/github/release/nightnoryu/anon3anon.svg?cache-control=no-cache"></a>
 <a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
 <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
 
-Multi-tenant Telegram bot for anonymous messages. One bot instance serves many recipients at once - every registered
-user gets their own personal link, and anyone who opens that link can message them anonymously. Public
-instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
+anon3anon is an anonymous contact relay for Telegram. It lets two people communicate without exposing their Telegram
+identities to each other.
 
 ## ✅ Features
 

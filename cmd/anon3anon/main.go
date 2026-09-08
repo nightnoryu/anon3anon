@@ -92,12 +92,12 @@ func initLogger() log.MainLogger {
 func registerCommands(ctx context.Context, b *bot.Bot) error {
 	_, err := b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
 		Commands: []models.BotCommand{
-			{Command: "start", Description: "Получить свою персональную ссылку"},
-			{Command: "help", Description: "Как пользоваться ботом"},
-			{Command: "mylink", Description: "Показать текущую персональную ссылку"},
-			{Command: "revoke", Description: "Отозвать ссылку и выпустить новую"},
-			{Command: "block", Description: "Ответом на сообщение - заблокировать отправителя"},
-			{Command: "stop", Description: "Выйти из текущей переписки"},
+			{Command: handler.CommandStart, Description: "Получить свою персональную ссылку"},
+			{Command: handler.CommandHelp, Description: "Как пользоваться ботом"},
+			{Command: handler.CommandMyLink, Description: "Показать текущую персональную ссылку"},
+			{Command: handler.CommandRevoke, Description: "Отозвать ссылку и выпустить новую"},
+			{Command: handler.CommandBlock, Description: "Ответом на сообщение - заблокировать отправителя"},
+			{Command: handler.CommandStop, Description: "Выйти из текущей переписки"},
 		},
 	})
 	return err
@@ -118,12 +118,12 @@ func initBotOptions(ctx context.Context, conf *config, store *sqlite.Store, logg
 
 	return []bot.Option{
 		bot.WithMiddlewares(middleware.NewLoggingMiddleware(logger)),
-		bot.WithMessageTextHandler("start", bot.MatchTypeCommand, handler.NewStartCommandHandler(deps)),
-		bot.WithMessageTextHandler("help", bot.MatchTypeCommand, handler.NewHelpHandler(deps)),
-		bot.WithMessageTextHandler("mylink", bot.MatchTypeCommand, handler.NewMyLinkHandler(deps)),
-		bot.WithMessageTextHandler("revoke", bot.MatchTypeCommand, handler.NewRevokeHandler(deps)),
-		bot.WithMessageTextHandler("block", bot.MatchTypeCommand, handler.NewBlockHandler(deps)),
-		bot.WithMessageTextHandler("stop", bot.MatchTypeCommand, handler.NewStopHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommand, handler.NewStartCommandHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommand, handler.NewHelpHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandMyLink, bot.MatchTypeCommand, handler.NewMyLinkHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandRevoke, bot.MatchTypeCommand, handler.NewRevokeHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandBlock, bot.MatchTypeCommand, handler.NewBlockHandler(deps)),
+		bot.WithMessageTextHandler(handler.CommandStop, bot.MatchTypeCommand, handler.NewStopHandler(deps)),
 		bot.WithDefaultHandler(handler.NewMessageRouter(deps)),
 	}, nil
 }

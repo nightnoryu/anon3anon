@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS sessions (
     updated_at     INTEGER NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_sessions_updated_at ON sessions (updated_at);
+
 CREATE TABLE IF NOT EXISTS relays (
     dest_chat_id   INTEGER NOT NULL,
     dest_msg_id    INTEGER NOT NULL,
@@ -19,6 +21,8 @@ CREATE TABLE IF NOT EXISTS relays (
     created_at     INTEGER NOT NULL,
     PRIMARY KEY (dest_chat_id, dest_msg_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_relays_created_at ON relays (created_at);
 
 CREATE TABLE IF NOT EXISTS blocks (
     owner_user_id  INTEGER NOT NULL,

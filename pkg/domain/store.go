@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Store persists bot state: registered users, per-sender routing sessions,
 // and the relay map that makes threaded replies possible.
@@ -20,6 +23,10 @@ type Store interface {
 	SetSession(ctx context.Context, senderChatID, ownerUserID int64) error
 	// GetSession returns the owner a sender's chat is currently messaging.
 	GetSession(ctx context.Context, senderChatID int64) (ownerUserID int64, ok bool, err error)
+	// TouchSession bumps the sender's session freshness so an active
+	// conversation is not pruned by PurgeExpired while it is still in use. It is
+	// a no-op if the sender has no session.
+	TouchSession(ctx context.Context, senderChatID int64) error
 	// ClearSession drops the sender's routing session so their messages are no
 	// longer relayed anywhere until they open a link again. It is idempotent.
 	ClearSession(ctx context.Context, senderChatID int64) error
@@ -27,6 +34,12 @@ type Store interface {
 	// cutting off senders who already opened a now-revoked link. It is
 	// idempotent and returns the number of sessions removed.
 	ClearSessionsForOwner(ctx context.Context, ownerUserID int64) (int64, error)
+
+	// PurgeExpired removes sessions last updated before cutoff and relays
+	// created before cutoff, bounding how long the sender<->recipient linkage
+	// is retained and keeping both tables from growing without limit. It is
+	// idempotent and returns the number of rows removed from each table.
+	PurgeExpired(ctx context.Context, cutoff time.Time) (sessions, relays int64, err error)
 
 	// PutRelay stores a delivered-message mapping.
 	PutRelay(ctx context.Context, r Relay) error

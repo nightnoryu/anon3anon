@@ -40,6 +40,7 @@ func main() {
 	}()
 
 	startHealthServer(ctx, conf.HealthAddr, store, logger)
+	startRetentionSweeper(ctx, conf, store, logger)
 
 	options, err := initBotOptions(ctx, conf, store, logger)
 	if err != nil {
@@ -77,6 +78,46 @@ func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, lo
 		defer cancel()
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			logger.Error(err)
+		}
+	}()
+}
+
+func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger) {
+	if conf.RetentionAge <= 0 || conf.RetentionSweepInterval <= 0 {
+		return
+	}
+
+	sweep := func() {
+		if ctx.Err() != nil {
+			return
+		}
+
+		cutoff := time.Now().UTC().Add(-conf.RetentionAge)
+		sessions, relays, err := store.PurgeExpired(ctx, cutoff)
+		if sessions > 0 || relays > 0 {
+			logger.WithFields(log.Fields{
+				"sessions_removed": sessions,
+				"relays_removed":   relays,
+			}).Info("retention sweep")
+		}
+		if err != nil {
+			logger.Error(err)
+		}
+	}
+
+	go func() {
+		sweep()
+
+		ticker := time.NewTicker(conf.RetentionSweepInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				sweep()
+			}
 		}
 	}()
 }

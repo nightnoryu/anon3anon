@@ -183,6 +183,16 @@ func (s *Store) GetSession(
 	return ownerUserID, true, nil
 }
 
+func (s *Store) TouchSession(ctx context.Context, senderChatID int64) error {
+	if _, err := s.db.ExecContext(ctx,
+		`UPDATE sessions SET updated_at = ? WHERE sender_chat_id = ?`,
+		time.Now().UTC().Unix(), senderChatID,
+	); err != nil {
+		return fmt.Errorf("touch session: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) ClearSession(ctx context.Context, senderChatID int64) error {
 	if _, err := s.db.ExecContext(ctx,
 		`DELETE FROM sessions WHERE sender_chat_id = ?`, senderChatID,
@@ -238,6 +248,30 @@ func (s *Store) LookupRelay(ctx context.Context, destChatID int64, destMsgID int
 	}
 	r.CreatedAt = time.Unix(created, 0).UTC()
 	return r, true, nil
+}
+
+func (s *Store) PurgeExpired(ctx context.Context, cutoff time.Time) (sessions, relays int64, err error) {
+	ts := cutoff.UTC().Unix()
+
+	sr, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE updated_at < ?`, ts)
+	if err != nil {
+		return 0, 0, fmt.Errorf("purge sessions: %w", err)
+	}
+	sessions, err = sr.RowsAffected()
+	if err != nil {
+		return 0, 0, fmt.Errorf("rows affected: %w", err)
+	}
+
+	rr, err := s.db.ExecContext(ctx, `DELETE FROM relays WHERE created_at < ?`, ts)
+	if err != nil {
+		return sessions, 0, fmt.Errorf("purge relays: %w", err)
+	}
+	relays, err = rr.RowsAffected()
+	if err != nil {
+		return sessions, 0, fmt.Errorf("rows affected: %w", err)
+	}
+
+	return sessions, relays, nil
 }
 
 func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (bool, error) {

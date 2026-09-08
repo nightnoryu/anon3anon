@@ -147,12 +147,24 @@ func (d DependencyContainer) relay(
 	if err != nil {
 		return err
 	}
-	return d.Store.PutRelay(ctx, domain.Relay{
+
+	if err := d.Store.PutRelay(ctx, domain.Relay{
 		DestChatID:   destChatID,
 		DestMsgID:    copied.ID,
 		OriginChatID: src.Chat.ID,
 		OwnerUserID:  ownerUserID,
-	})
+	}); err != nil {
+		return err
+	}
+
+	// An inbound anonymous message means the sender's conversation is still
+	// live; slide its retention window forward so PurgeExpired leaves it alone.
+	if rateLimited {
+		if err := d.Store.TouchSession(ctx, src.Chat.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // block handles the "/block" command: the owner replies with it to a delivered

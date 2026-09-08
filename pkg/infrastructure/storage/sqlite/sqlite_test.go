@@ -178,6 +178,74 @@ func TestClearSessionsForOwner(t *testing.T) {
 	assert.Zero(t, removed)
 }
 
+func TestPurgeExpired(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	owner, err := store.UpsertUser(ctx, 10, 10)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 501, owner.TgUserID))
+	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+		DestChatID: 7, DestMsgID: 42, OriginChatID: 9, OwnerUserID: owner.TgUserID,
+	}))
+
+	// Nothing is old enough yet.
+	sessions, relays, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Hour))
+	require.NoError(t, err)
+	assert.Zero(t, sessions)
+	assert.Zero(t, relays)
+
+	// Everything now predates the cutoff.
+	sessions, relays, err = store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), sessions)
+	assert.Equal(t, int64(1), relays)
+
+	_, ok, err := store.GetSession(ctx, 501)
+	require.NoError(t, err)
+	assert.False(t, ok, "expired session must be gone")
+
+	_, ok, err = store.LookupRelay(ctx, 7, 42)
+	require.NoError(t, err)
+	assert.False(t, ok, "expired relay must be gone")
+
+	// Idempotent: nothing left to purge is not an error.
+	sessions, relays, err = store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
+	require.NoError(t, err)
+	assert.Zero(t, sessions)
+	assert.Zero(t, relays)
+}
+
+func TestTouchSession(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	store := newStore(t)
+
+	owner, err := store.UpsertUser(ctx, 10, 10)
+	require.NoError(t, err)
+	require.NoError(t, store.SetSession(ctx, 501, owner.TgUserID))
+
+	// Touching an existing session keeps it pointed at the same owner and
+	// protects it from a subsequent purge with a cutoff just before now.
+	require.NoError(t, store.TouchSession(ctx, 501))
+
+	sessions, _, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Minute))
+	require.NoError(t, err)
+	assert.Zero(t, sessions)
+
+	got, ok, err := store.GetSession(ctx, 501)
+	require.NoError(t, err)
+	require.True(t, ok)
+	assert.Equal(t, owner.TgUserID, got)
+
+	// No-op for a sender without a session.
+	require.NoError(t, store.TouchSession(ctx, 999))
+	_, ok, err = store.GetSession(ctx, 999)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
 func TestRelayPutLookupAndUpsert(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

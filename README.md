@@ -13,8 +13,9 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 - **Per-user personal links** - `t.me/<bot>?start=<token>`, with unguessable random tokens
 - **Two-way threaded conversations** - the recipient replies to a delivered message and the answer goes back to the
   original anonymous sender, still anonymous in both directions
-- **`/revoke`** rotates your link, kills the old one, and drops every routing session opened through it, so senders
-  who already had the link can no longer reach you
+- **`/revoke`** rotates your link, kills the old one, and drops both the routing sessions opened through it and the
+  reply threads already established, so senders who already had the link can no longer reach you - at the cost of
+  losing your own ability to answer messages received before the revoke, since both directions share one mapping
 - **`/block`** as a reply to a delivered message stops that one anonymous sender from ever reaching you again - other
   senders are unaffected
 - **Per-pair rate limiting** - each sender is capped at *N* messages per time window *per recipient*, so one recipient
@@ -47,7 +48,8 @@ instance: [@anon3anon_bot](https://t.me/anon3anon_bot).
 1. Open someone's personal link (`t.me/<bot>?start=<token>`). The bot confirms you can now write
 2. Send messages normally - they are delivered anonymously to the link's owner
 3. When the owner replies, their answer lands in your chat. Reply to it to continue the thread
-4. `/stop` leaves the conversation - your messages go nowhere until you open a link again
+4. `/stop` leaves the conversation - neither new messages nor replies to already delivered ones go anywhere
+   until you open a link again. Conversations with other recipients are unaffected
 
 ## 🚀 Hosting
 

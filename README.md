@@ -1,13 +1,17 @@
 # anon3anon
 
-_Talk without trading identities._
+*Talk without trading identities.*
 
 <a href="https://github.com/nightnoryu/anon3anon/releases"><img src="https://img.shields.io/github/release/nightnoryu/anon3anon.svg?cache-control=no-cache"></a>
 <a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
 <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
 
-anon3anon is an anonymous contact relay for Telegram. It lets two people communicate without exposing their Telegram
-identities to each other.
+**anon3anon** is an anonymous contact relay for Telegram. It lets two people
+communicate without exposing their Telegram identities to each other.
+
+Share a personal link, get anonymous messages, reply to them in a threaded
+conversation - in both directions, with no identity ever crossing between the two
+sides.
 
 ## ✅ Features
 
@@ -15,10 +19,8 @@ identities to each other.
 - **Two-way threaded conversations** - the recipient replies to a delivered message and the answer goes back to the
   original anonymous sender, still anonymous in both directions
 - **`/revoke`** rotates your link, kills the old one, and drops both the routing sessions opened through it and the
-  reply threads already established, so senders who already had the link can no longer reach you - at the cost of
-  losing your own ability to answer messages received before the revoke, since both directions share one mapping
-- **`/block`** as a reply to a delivered message stops that one anonymous sender from ever reaching you again - other
-  senders are unaffected
+  reply threads already established, so senders who already had the link can no longer reach you
+- **`/block`** as a reply to a delivered message stops that one anonymous sender from ever reaching you again
 - **Per-pair rate limiting** - each sender is capped at *N* messages per time window *per recipient*, so one recipient
   getting spammed doesn't affect anyone else
 - **Optional allow list** - restrict who may register as a recipient by Telegram user ID; senders are never restricted
@@ -52,109 +54,29 @@ identities to each other.
 4. `/stop` leaves the conversation - neither new messages nor replies to already delivered ones go anywhere
    until you open a link again. Conversations with other recipients are unaffected
 
-## 🚀 Hosting
+## 🚀 Run your own
 
-You can easily host your own instance of this bot.
-
-### Docker
-
-Just run the pre-built image:
+The quickest path - a pre-built image and a volume:
 
 ```shell
 docker run -d --name anon3anon \
   -e ANON3ANON_TELEGRAM_BOT_TOKEN=123:ABC \
   -e ANON3ANON_PSEUDONYM_KEY="$(openssl rand -base64 32)" \
-  -e ANON3ANON_ALLOWED_USER_IDS=123,456 \
   -v anon3anon-data:/data \
   ghcr.io/nightnoryu/anon3anon:latest
 ```
 
-> **Keep `ANON3ANON_PSEUDONYM_KEY` safe and stable.** It is what stops the database from naming its own users, so
-> store it wherever your other secrets live - never on the data volume next to the database. Losing it or changing it
-> does not corrupt anything, but every session, block, and relay written under the old key stops matching: senders
-> have to reopen their link and blocks have to be reissued.
+Compose and Kubernetes setups, backups, egress proxying, and the full
+walkthrough are in **[docs/deployment.md](docs/deployment.md)**.
 
-Or with docker-compose:
+## 📚 Documentation
 
-```yaml
-services:
-  anon3anon:
-    image: ghcr.io/nightnoryu/anon3anon:latest
-    container_name: anon3anon
-    restart: unless-stopped
-    environment:
-      ANON3ANON_TELEGRAM_BOT_TOKEN: "123:ABC"
-      ANON3ANON_PSEUDONYM_KEY: "<output of: openssl rand -base64 32>"
-      ANON3ANON_ALLOWED_USER_IDS: "123,456"
-    volumes:
-      - "anon3anon-data:/data"
-
-volumes:
-  anon3anon-data:
-```
-
-### Kubernetes
-
-`k8s/` holds a Kustomize setup (`base` + `prod` overlay):
-
-- Single replica, `Recreate` strategy, SQLite on a `PersistentVolumeClaim`
-- Secrets are SOPS-encrypted (age) and decrypted at apply time
-  with [ksops](https://github.com/viaduct-ai/kustomize-sops)
-- A [Cloudflare WARP](https://github.com/cmj2002/warp-docker) init container gives the app a SOCKS5 proxy for Telegram
-  egress where the API is blocked
-
-The secret must carry `ANON3ANON_TELEGRAM_BOT_TOKEN` and `ANON3ANON_PSEUDONYM_KEY`; the deployment refuses to start
-without either. Replace the sops-encoded secrets with yours and apply the `prod` overlay:
-
-```shell
-kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
-```
-
-### Configuration
-
-All configuration is set via environment variables (prefix `ANON3ANON_`):
-
-| Variable                             | Required | Default              | Description                                                                                                                                                                             |
-|--------------------------------------|----------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ANON3ANON_TELEGRAM_BOT_TOKEN`       | yes      | —                    | Bot token from [@BotFather](https://t.me/BotFather)                                                                                                                                     |
-| `ANON3ANON_PSEUDONYM_KEY`            | yes      | —                    | Key used to pseudonymize sender identifiers at rest, as base64 or hex, at least 32 bytes. Generate with `openssl rand -base64 32`, keep it off the data volume, and keep it stable      |
-| `ANON3ANON_DATABASE_PATH`            | no       | `/data/anon3anon.db` | Path to the SQLite database file                                                                                                                                                        |
-| `ANON3ANON_ALLOWED_USER_IDS`         | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Can be obtained from [@userinfobot](https://t.me/userinfobot)                                                    |
-| `ANON3ANON_RATE_LIMIT_WINDOW`        | no       | `1h`                 | Rate-limit bucket size (Go duration). `0` disables rate limiting                                                                                                                        |
-| `ANON3ANON_RATE_LIMIT_MAX`           | no       | `100`                | Max inbound anonymous messages per sender -> recipient per window. Recipient replies are not counted. `0` disables rate limiting                                                        |
-| `ANON3ANON_HEALTH_ADDR`              | no       | `:8080`              | Listen address for the liveness (`/healthz`) and readiness (`/readyz`) HTTP endpoints                                                                                                   |
-| `ANON3ANON_RETENTION_AGE`            | no       | `720h`               | Idle age (Go duration) after which a background sweep deletes `sessions` (bumped by each inbound message), `relays`, `blocks`, and `message_rates` rows. `0` disables retention pruning |
-| `ANON3ANON_RETENTION_SWEEP_INTERVAL` | no       | `1h`                 | How often the retention sweep runs (Go duration). `0` disables it                                                                                                                       |
-| `ANON3ANON_LOG_LEVEL`                | no       | `info`               | `debug`, `info`, `warn` or `error`. **`debug` logs message text, usernames, and raw user IDs** - use it only while diagnosing a problem                                                 |
-
-## ⚒️ Local Development
-
-### Prerequisites
-
-- [mise](https://mise.jdx.dev)
-- Docker with docker-compose-plugin
-
-### First launch
-
-```shell
-git clone https://github.com/nightnoryu/anon3anon
-cd anon3anon
-
-# Configure the environment (bot token)
-cp compose.override.example.yml compose.override.yml
-$EDITOR compose.override.yml
-
-mise run        # download modules, build the binary, lint, test
-mise run dev    # build and start the container (binary is bind-mounted from ./bin)
-```
-
-The container runs the host-built binary from `./bin`, so after a code change:
-
-```shell
-mise run dev:reload   # rebuild and restart the container
-```
-
-See [mise.toml](/mise.toml) for more pre-configured tasks.
+- **[Architecture](docs/architecture.md)** - domain model, sessions and relays, pseudonymization, why HMAC, why single-connection SQLite
+- **[Configuration](docs/configuration.md)** - every `ANON3ANON_` environment variable, with defaults and notes
+- **[Deployment](docs/deployment.md)** - self-hosting with Docker, Compose, or Kubernetes
+- **[Development](docs/development.md)** - local setup with mise and Docker, the edit/rebuild loop, task list
+- **[Privacy model](docs/privacy.md)** - what it protects and what it doesn't, what is stored, retention, deletion, revocation
+- **[Changelog](CHANGELOG.md)** - release history
 
 ## 📜 License
 

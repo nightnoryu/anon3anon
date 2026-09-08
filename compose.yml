@@ -13,6 +13,12 @@ services:
     volumes:
       - "./bin:/app/bin"
       - "anon3anon-data:/data"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/readyz"]
+      interval: 20s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
 volumes:
   anon3anon-data:

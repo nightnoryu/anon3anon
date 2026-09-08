@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
+	"net/http"
+	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -10,6 +13,7 @@ import (
 	"github.com/nightnoryu/go-kita/log"
 	"github.com/nightnoryu/go-kita/runtime"
 
+	"anon3anon/pkg/infrastructure/health"
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 	"anon3anon/pkg/infrastructure/telegram/handler"
 	"anon3anon/pkg/infrastructure/telegram/middleware"
@@ -35,6 +39,8 @@ func main() {
 		}
 	}()
 
+	startHealthServer(ctx, conf.HealthAddr, store, logger)
+
 	options, err := initBotOptions(ctx, conf, store, logger)
 	if err != nil {
 		logger.FatalError(err)
@@ -50,6 +56,29 @@ func main() {
 	}
 
 	b.Start(ctx)
+}
+
+func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger) {
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           health.Handler(store),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(err)
+		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			logger.Error(err)
+		}
+	}()
 }
 
 func initLogger() log.MainLogger {

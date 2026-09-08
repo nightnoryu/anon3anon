@@ -8,4 +8,5 @@ type config struct {
 	AllowedUserIDs   []int64       `env:"ALLOWED_USER_IDS" envSeparator:","`
 	RateLimitWindow  time.Duration `env:"RATE_LIMIT_WINDOW" envDefault:"1h"`
 	RateLimitMax     int           `env:"RATE_LIMIT_MAX" envDefault:"100"`
+	HealthAddr       string        `env:"HEALTH_ADDR" envDefault:":8080"`
 }

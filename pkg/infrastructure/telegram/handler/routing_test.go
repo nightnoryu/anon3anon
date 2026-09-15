@@ -167,6 +167,8 @@ func TestRouteToOwnerDeliversMessageAndRecordsRelay(t *testing.T) {
 	require.Len(t, c.copies, 1)
 	assert.Equal(t, owner.ChatID, c.copies[0].ChatID)
 	assert.Equal(t, int64(50), c.copies[0].FromChatID)
+	require.Len(t, c.sends, 2)
+	assert.Equal(t, newAnonymousMessagePrefix, c.sends[0].Text)
 	assert.Equal(t, messageSentMessage, c.lastSend())
 
 	relay, ok, err := store.LookupRelay(ctx, owner.ChatID, c.nextMsgID)

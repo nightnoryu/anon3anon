@@ -154,13 +154,13 @@ func (d DependencyContainer) relay(
 	c telegramClient,
 	src *models.Message,
 	destChatID, ownerUserID int64,
-	rateLimited bool,
+	inboundAnonymous bool,
 ) error {
 	if hasUnsupportedContent(src) {
 		return errUnsupportedContent
 	}
 
-	if rateLimited {
+	if inboundAnonymous {
 		allowed, err := d.Store.AllowMessage(ctx, src.Chat.ID, destChatID)
 		if err != nil {
 			return err
@@ -173,6 +173,18 @@ func (d DependencyContainer) relay(
 		}
 	}
 
+	if inboundAnonymous {
+		if _, err := c.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: destChatID,
+			Text:   newAnonymousMessagePrefix,
+		}); err != nil {
+			if refundErr := d.Store.RefundMessage(ctx, src.Chat.ID, destChatID); refundErr != nil {
+				d.Logger.Error(refundErr)
+			}
+			return err
+		}
+	}
+
 	copied, err := c.CopyMessage(ctx, &bot.CopyMessageParams{
 		ChatID:     destChatID,
 		FromChatID: src.Chat.ID,
@@ -181,7 +193,7 @@ func (d DependencyContainer) relay(
 	if err != nil {
 		// The message never landed; give the quota unit that AllowMessage just
 		// consumed back so a failed delivery does not count against the sender.
-		if rateLimited {
+		if inboundAnonymous {
 			if refundErr := d.Store.RefundMessage(ctx, src.Chat.ID, destChatID); refundErr != nil {
 				d.Logger.Error(refundErr)
 			}
@@ -200,7 +212,7 @@ func (d DependencyContainer) relay(
 
 	// An inbound anonymous message means the sender's conversation is still
 	// live; slide its retention window forward so PurgeExpired leaves it alone.
-	if rateLimited {
+	if inboundAnonymous {
 		if err := d.Store.TouchSession(ctx, src.Chat.ID); err != nil {
 			d.Logger.Error(err)
 		}

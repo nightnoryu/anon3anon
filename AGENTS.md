@@ -42,7 +42,7 @@ Write idiomatic Go and let `gofmt`, `goimports`, and `gci` format imports.
 Use tabs for indentation, short lowercase package names, exported `PascalCase`
 identifiers, and unexported `camelCase` identifiers. Keep dependencies pointing
 inward: handlers access persistence through `domain.Store`, not SQLite types.
-Wrap errors with useful operation context (for example, `fmt.Errorf("open db: %w", err)`).
+Wrap errors with useful operation context (for example, `errors.Wrap(err, "open db")`).
 
 ## Testing Guidelines
 

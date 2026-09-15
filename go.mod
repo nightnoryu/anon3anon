@@ -3,6 +3,7 @@ module anon3anon
 go 1.26.0
 
 require (
+	github.com/go-faster/errors v0.8.0
 	github.com/go-telegram/bot v1.25.0
 	github.com/nightnoryu/go-kita v1.4.0
 	github.com/stretchr/testify v1.12.1
@@ -12,7 +13,6 @@ require (
 require (
 	github.com/caarlos0/env/v11 v11.4.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/go-faster/errors v0.8.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect

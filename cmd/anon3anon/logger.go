@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/go-faster/errors"
 	"github.com/nightnoryu/go-kita/jsonlog"
 	"github.com/nightnoryu/go-kita/log"
 )
@@ -26,6 +26,6 @@ func parseLogLevel(name string) (jsonlog.Level, error) {
 	case "error":
 		return jsonlog.ErrorLevel, nil
 	default:
-		return defaultLogLevel, fmt.Errorf("unknown log level %q: use debug, info, warn or error", name)
+		return defaultLogLevel, errors.Errorf("unknown log level %q: use debug, info, warn or error", name)
 	}
 }

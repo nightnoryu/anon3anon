@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"time"
 
+	"github.com/go-faster/errors"
 	sqlitedrv "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
@@ -36,14 +37,14 @@ func Open(path string, rateWindow time.Duration, rateMax int, keys *pseudonym.Ke
 
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("open database: %w", err)
+		return nil, errors.Wrap(err, "open database")
 	}
 
 	db.SetMaxOpenConns(1)
 
 	if _, err := db.ExecContext(context.Background(), schema); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("apply schema: %w", err)
+		return nil, errors.Wrap(err, "apply schema")
 	}
 
 	return &Store{db: db, keys: keys, rateWindow: rateWindow, rateMax: rateMax}, nil
@@ -67,7 +68,7 @@ func (s *Store) UpsertUser(ctx context.Context, tgUserID, chatID int64) (domain.
 	for range tokenAttempts {
 		tok, err := token.New()
 		if err != nil {
-			return domain.User{}, fmt.Errorf("generate token: %w", err)
+			return domain.User{}, errors.Wrap(err, "generate token")
 		}
 
 		var (
@@ -89,10 +90,10 @@ func (s *Store) UpsertUser(ctx context.Context, tgUserID, chatID int64) (domain.
 			// target and is absorbed by DO UPDATE. Retry with a fresh token.
 			continue
 		default:
-			return domain.User{}, fmt.Errorf("upsert user: %w", err)
+			return domain.User{}, errors.Wrap(err, "upsert user")
 		}
 	}
-	return domain.User{}, errors.New("could not allocate a unique link token")
+	return domain.User{}, stderrors.New("could not allocate a unique link token")
 }
 
 func (s *Store) UserByToken(ctx context.Context, tokenValue string) (domain.User, bool, error) {
@@ -116,10 +117,10 @@ func (s *Store) queryUser(ctx context.Context, query string, arg any) (domain.Us
 	)
 	err := s.db.QueryRowContext(ctx, query, arg).Scan(&u.TgUserID, &u.ChatID, &u.LinkToken, &created)
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case stderrors.Is(err, sql.ErrNoRows):
 		return domain.User{}, false, nil
 	case err != nil:
-		return domain.User{}, false, fmt.Errorf("query user: %w", err)
+		return domain.User{}, false, errors.Wrap(err, "query user")
 	}
 	u.CreatedAt = time.Unix(created, 0).UTC()
 	return u, true, nil
@@ -129,7 +130,7 @@ func (s *Store) RotateToken(ctx context.Context, tgUserID int64) (string, error)
 	for range tokenAttempts {
 		tok, err := token.New()
 		if err != nil {
-			return "", fmt.Errorf("generate token: %w", err)
+			return "", errors.Wrap(err, "generate token")
 		}
 
 		res, err := s.db.ExecContext(ctx,
@@ -139,25 +140,25 @@ func (s *Store) RotateToken(ctx context.Context, tgUserID int64) (string, error)
 		case err == nil:
 			affected, aerr := res.RowsAffected()
 			if aerr != nil {
-				return "", fmt.Errorf("rows affected: %w", aerr)
+				return "", errors.Wrap(aerr, "rows affected")
 			}
 			if affected == 0 {
-				return "", fmt.Errorf("rotate token: %w", sql.ErrNoRows)
+				return "", errors.Wrap(sql.ErrNoRows, "rotate token")
 			}
 			return tok, nil
 		case isUniqueViolation(err):
 			continue
 		default:
-			return "", fmt.Errorf("update token: %w", err)
+			return "", errors.Wrap(err, "update token")
 		}
 	}
-	return "", errors.New("could not allocate a unique link token")
+	return "", stderrors.New("could not allocate a unique link token")
 }
 
 func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return false, fmt.Errorf("begin delete user: %w", err)
+		return false, errors.Wrap(err, "begin delete user")
 	}
 	defer func() { _ = tx.Rollback() }()
 
@@ -170,10 +171,10 @@ func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 		`SELECT chat_id FROM users WHERE tg_user_id = ?`, tgUserID,
 	).Scan(&chatID)
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case stderrors.Is(err, sql.ErrNoRows):
 		return false, nil
 	case err != nil:
-		return false, fmt.Errorf("lookup user: %w", err)
+		return false, errors.Wrap(err, "lookup user")
 	}
 
 	// sessions.owner_user_id references users, so sessions must go before the
@@ -193,16 +194,16 @@ func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 	}
 	for _, st := range stmts {
 		if _, execErr := tx.ExecContext(ctx, st.query, st.args...); execErr != nil {
-			return false, fmt.Errorf("delete user rows: %w", execErr)
+			return false, errors.Wrap(execErr, "delete user rows")
 		}
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM users WHERE tg_user_id = ?`, tgUserID); err != nil {
-		return false, fmt.Errorf("delete user: %w", err)
+		return false, errors.Wrap(err, "delete user")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return false, fmt.Errorf("commit delete user: %w", err)
+		return false, errors.Wrap(err, "commit delete user")
 	}
 	return true, nil
 }
@@ -215,7 +216,7 @@ func (s *Store) SetSession(ctx context.Context, senderChatID, ownerUserID int64)
 		s.keys.Ref(senderChatID), ownerUserID, time.Now().UTC().Unix(),
 	)
 	if err != nil {
-		return fmt.Errorf("set session: %w", err)
+		return errors.Wrap(err, "set session")
 	}
 	return nil
 }
@@ -227,10 +228,10 @@ func (s *Store) GetSession(
 		`SELECT owner_user_id FROM sessions WHERE sender_ref = ?`, s.keys.Ref(senderChatID),
 	).Scan(&ownerUserID)
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case stderrors.Is(err, sql.ErrNoRows):
 		return 0, false, nil
 	case err != nil:
-		return 0, false, fmt.Errorf("get session: %w", err)
+		return 0, false, errors.Wrap(err, "get session")
 	}
 	return ownerUserID, true, nil
 }
@@ -240,7 +241,7 @@ func (s *Store) TouchSession(ctx context.Context, senderChatID int64) error {
 		`UPDATE sessions SET updated_at = ? WHERE sender_ref = ?`,
 		time.Now().UTC().Unix(), s.keys.Ref(senderChatID),
 	); err != nil {
-		return fmt.Errorf("touch session: %w", err)
+		return errors.Wrap(err, "touch session")
 	}
 	return nil
 }
@@ -249,7 +250,7 @@ func (s *Store) ClearSession(ctx context.Context, senderChatID int64) error {
 	if _, err := s.db.ExecContext(ctx,
 		`DELETE FROM sessions WHERE sender_ref = ?`, s.keys.Ref(senderChatID),
 	); err != nil {
-		return fmt.Errorf("clear session: %w", err)
+		return errors.Wrap(err, "clear session")
 	}
 	return nil
 }
@@ -259,11 +260,11 @@ func (s *Store) ClearSessionsForOwner(ctx context.Context, ownerUserID int64) (i
 		`DELETE FROM sessions WHERE owner_user_id = ?`, ownerUserID,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("clear sessions for owner: %w", err)
+		return 0, errors.Wrap(err, "clear sessions for owner")
 	}
 	removed, err := res.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("rows affected: %w", err)
+		return 0, errors.Wrap(err, "rows affected")
 	}
 	return removed, nil
 }
@@ -273,7 +274,7 @@ func (s *Store) ClearRelaysForOwner(ctx context.Context, ownerUserID int64) (int
 		`DELETE FROM relays WHERE owner_user_id = ?`, ownerUserID,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("clear relays for owner: %w", err)
+		return 0, errors.Wrap(err, "clear relays for owner")
 	}
 	return removed, nil
 }
@@ -288,7 +289,7 @@ func (s *Store) ClearRelaysForSender(
 		ownerUserID, senderRef, senderRef,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("clear relays for sender: %w", err)
+		return 0, errors.Wrap(err, "clear relays for sender")
 	}
 	return removed, nil
 }
@@ -296,7 +297,7 @@ func (s *Store) ClearRelaysForSender(
 func (s *Store) PutRelay(ctx context.Context, r domain.Relay) error {
 	originSeal, err := s.keys.Seal(r.OriginChatID)
 	if err != nil {
-		return fmt.Errorf("put relay: %w", err)
+		return errors.Wrap(err, "put relay")
 	}
 
 	_, err = s.db.ExecContext(ctx,
@@ -311,7 +312,7 @@ func (s *Store) PutRelay(ctx context.Context, r domain.Relay) error {
 		r.OwnerUserID, time.Now().UTC().Unix(),
 	)
 	if err != nil {
-		return fmt.Errorf("put relay: %w", err)
+		return errors.Wrap(err, "put relay")
 	}
 	return nil
 }
@@ -328,15 +329,15 @@ func (s *Store) LookupRelay(ctx context.Context, destChatID int64, destMsgID int
 		s.keys.Ref(destChatID), destMsgID,
 	).Scan(&originSeal, &r.OwnerUserID, &created)
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case stderrors.Is(err, sql.ErrNoRows):
 		return domain.Relay{}, false, nil
 	case err != nil:
-		return domain.Relay{}, false, fmt.Errorf("lookup relay: %w", err)
+		return domain.Relay{}, false, errors.Wrap(err, "lookup relay")
 	}
 
 	r.OriginChatID, err = s.keys.Open(originSeal)
 	if err != nil {
-		return domain.Relay{}, false, fmt.Errorf("lookup relay: %w", err)
+		return domain.Relay{}, false, errors.Wrap(err, "lookup relay")
 	}
 	r.CreatedAt = time.Unix(created, 0).UTC()
 	return r, true, nil
@@ -359,7 +360,7 @@ func (s *Store) PurgeExpired(ctx context.Context, cutoff time.Time) (domain.Purg
 	for _, d := range byTime {
 		n, err := s.execCount(ctx, d.query, ts)
 		if err != nil {
-			return stats, fmt.Errorf("purge %s: %w", d.name, err)
+			return stats, errors.Wrap(err, fmt.Sprintf("purge %s", d.name))
 		}
 		*d.into = n
 	}
@@ -370,7 +371,7 @@ func (s *Store) PurgeExpired(ctx context.Context, cutoff time.Time) (domain.Purg
 			ts/int64(s.rateWindow.Seconds()),
 		)
 		if err != nil {
-			return stats, fmt.Errorf("purge message_rates: %w", err)
+			return stats, errors.Wrap(err, "purge message_rates")
 		}
 		stats.MessageRates = n
 	}
@@ -399,7 +400,7 @@ func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (
 		 WHERE sender_ref = ? AND recipient_id = ? AND bucket < ?`,
 		senderRef, recipientID, bucket,
 	); err != nil {
-		return false, fmt.Errorf("prune message rates: %w", err)
+		return false, errors.Wrap(err, "prune message rates")
 	}
 
 	var count int
@@ -412,7 +413,7 @@ func (s *Store) AllowMessage(ctx context.Context, senderID, recipientID int64) (
 		senderRef, recipientID, bucket,
 	).Scan(&count)
 	if err != nil {
-		return false, fmt.Errorf("bump message rate: %w", err)
+		return false, errors.Wrap(err, "bump message rate")
 	}
 	return count <= s.rateMax, nil
 }
@@ -427,7 +428,7 @@ func (s *Store) RefundMessage(ctx context.Context, senderID, recipientID int64) 
 		 WHERE sender_ref = ? AND recipient_id = ? AND bucket = ? AND count > 0`,
 		s.keys.Ref(senderID), recipientID, s.currentBucket(),
 	); err != nil {
-		return fmt.Errorf("refund message rate: %w", err)
+		return errors.Wrap(err, "refund message rate")
 	}
 	return nil
 }
@@ -438,7 +439,7 @@ func (s *Store) Block(ctx context.Context, ownerUserID, senderChatID int64) erro
 		 ON CONFLICT (owner_user_id, sender_ref) DO NOTHING`,
 		ownerUserID, s.keys.Ref(senderChatID), time.Now().UTC().Unix(),
 	); err != nil {
-		return fmt.Errorf("insert block: %w", err)
+		return errors.Wrap(err, "insert block")
 	}
 	return nil
 }
@@ -450,10 +451,10 @@ func (s *Store) IsBlocked(ctx context.Context, ownerUserID, senderChatID int64) 
 		ownerUserID, s.keys.Ref(senderChatID),
 	).Scan(&one)
 	switch {
-	case errors.Is(err, sql.ErrNoRows):
+	case stderrors.Is(err, sql.ErrNoRows):
 		return false, nil
 	case err != nil:
-		return false, fmt.Errorf("query block: %w", err)
+		return false, errors.Wrap(err, "query block")
 	}
 	return true, nil
 }
@@ -468,7 +469,7 @@ func (s *Store) currentBucket() int64 {
 
 func isUniqueViolation(err error) bool {
 	var serr *sqlitedrv.Error
-	if !errors.As(err, &serr) {
+	if !stderrors.As(err, &serr) {
 		return false
 	}
 	code := serr.Code()

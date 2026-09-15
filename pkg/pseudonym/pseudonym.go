@@ -10,9 +10,10 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
-	"fmt"
+	stderrors "errors"
 	"strings"
+
+	"github.com/go-faster/errors"
 )
 
 const MinKeyLen = 32
@@ -23,7 +24,7 @@ const (
 	refLen   = 16
 )
 
-var ErrKeyTooShort = fmt.Errorf("pseudonym key must be at least %d bytes", MinKeyLen)
+var ErrKeyTooShort = errors.Errorf("pseudonym key must be at least %d bytes", MinKeyLen)
 
 type Keyring struct {
 	refKey []byte
@@ -37,21 +38,21 @@ func NewKeyring(masterKey []byte) (*Keyring, error) {
 
 	refKey, err := hkdf.Key(sha256.New, masterKey, nil, refInfo, sha256.Size)
 	if err != nil {
-		return nil, fmt.Errorf("derive reference key: %w", err)
+		return nil, errors.Wrap(err, "derive reference key")
 	}
 
 	sealKey, err := hkdf.Key(sha256.New, masterKey, nil, sealInfo, 32)
 	if err != nil {
-		return nil, fmt.Errorf("derive sealing key: %w", err)
+		return nil, errors.Wrap(err, "derive sealing key")
 	}
 
 	block, err := aes.NewCipher(sealKey)
 	if err != nil {
-		return nil, fmt.Errorf("init cipher: %w", err)
+		return nil, errors.Wrap(err, "init cipher")
 	}
 	aead, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, fmt.Errorf("init aead: %w", err)
+		return nil, errors.Wrap(err, "init aead")
 	}
 
 	return &Keyring{refKey: refKey, aead: aead}, nil
@@ -68,7 +69,7 @@ func NewKeyring(masterKey []byte) (*Keyring, error) {
 func ParseKey(encoded string) ([]byte, error) {
 	trimmed := strings.TrimSpace(encoded)
 	if trimmed == "" {
-		return nil, errors.New("pseudonym key is empty")
+		return nil, stderrors.New("pseudonym key is empty")
 	}
 
 	if key, err := hex.DecodeString(trimmed); err == nil {
@@ -85,7 +86,7 @@ func ParseKey(encoded string) ([]byte, error) {
 		}
 	}
 
-	return nil, errors.New("pseudonym key is neither valid hex nor valid base64")
+	return nil, stderrors.New("pseudonym key is neither valid hex nor valid base64")
 }
 
 // Ref returns the stable, one-way tag for chatID. Equal chat IDs always map to
@@ -108,7 +109,7 @@ func (k *Keyring) Ref(chatID int64) string {
 func (k *Keyring) Seal(chatID int64) ([]byte, error) {
 	nonce := make([]byte, k.aead.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
-		return nil, fmt.Errorf("generate nonce: %w", err)
+		return nil, errors.Wrap(err, "generate nonce")
 	}
 
 	var plaintext [8]byte
@@ -122,15 +123,15 @@ func (k *Keyring) Seal(chatID int64) ([]byte, error) {
 func (k *Keyring) Open(sealed []byte) (int64, error) {
 	nonceSize := k.aead.NonceSize()
 	if len(sealed) < nonceSize {
-		return 0, errors.New("sealed chat id is too short")
+		return 0, stderrors.New("sealed chat id is too short")
 	}
 
 	plaintext, err := k.aead.Open(nil, sealed[:nonceSize], sealed[nonceSize:], nil)
 	if err != nil {
-		return 0, fmt.Errorf("open sealed chat id: %w", err)
+		return 0, errors.Wrap(err, "open sealed chat id")
 	}
 	if len(plaintext) != 8 {
-		return 0, errors.New("sealed chat id has unexpected length")
+		return 0, stderrors.New("sealed chat id has unexpected length")
 	}
 
 	return int64(binary.BigEndian.Uint64(plaintext)), nil //nolint:gosec // bit reinterpretation

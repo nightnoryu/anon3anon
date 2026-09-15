@@ -52,11 +52,8 @@ spec:
               cpu: 200m
               memory: 128Mi
           readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "curl -sf --max-time 10 -x socks5h://127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace | grep -q 'warp=on'"
+            tcpSocket:
+              port: warp-proxy
             initialDelaySeconds: 10
             periodSeconds: 20
       containers:

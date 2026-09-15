@@ -56,9 +56,9 @@ spec:
               command:
                 - sh
                 - -c
-                - "curl -sf --max-time 5 -x socks5h://127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace | grep -q 'warp=on'"
-            initialDelaySeconds: 5
-            periodSeconds: 15
+                - "curl -sf --max-time 10 -x socks5h://127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace | grep -q 'warp=on'"
+            initialDelaySeconds: 10
+            periodSeconds: 20
       containers:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest

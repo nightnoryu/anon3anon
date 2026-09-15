@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1
+
+- incoming anonymous messages are now prefixed with a short notice
+- the production WARP sidecar now has the required capabilities and a TCP readiness probe, improving startup reliability
+- application and storage errors now use consistent contextual wrapping
+
 ## v1.0.0
 
 - `/revoke` now also drops the revoking recipient's relay map

@@ -4,10 +4,10 @@ go 1.26.0
 
 require (
 	github.com/go-faster/errors v0.8.0
-	github.com/go-telegram/bot v1.25.0
-	github.com/nightnoryu/go-kita v1.4.0
+	github.com/go-telegram/bot v1.27.0
+	github.com/nightnoryu/go-kita v1.5.0
 	github.com/stretchr/testify v1.12.1
-	modernc.org/sqlite v1.58.0
+	modernc.org/sqlite v1.59.0
 )
 
 require (

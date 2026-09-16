@@ -56,6 +56,12 @@ spec:
               port: warp-proxy
             initialDelaySeconds: 10
             periodSeconds: 20
+          startupProbe:
+            tcpSocket:
+              port: warp-proxy
+            periodSeconds: 1
+            timeoutSeconds: 1
+            failureThreshold: 60
       containers:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest

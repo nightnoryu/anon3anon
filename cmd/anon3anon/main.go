@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	stdlog "log"
+	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -18,8 +20,10 @@ import (
 )
 
 const (
-	appID           = "anon3anon"
-	defaultLogLevel = jsonlog.InfoLevel
+	appID                     = "anon3anon"
+	defaultLogLevel           = jsonlog.InfoLevel
+	telegramStartupMaxRetries = 4
+	telegramStartupRetryDelay = time.Second
 )
 
 func main() {
@@ -72,18 +76,20 @@ func main() {
 }
 
 func registerCommands(ctx context.Context, b *bot.Bot) error {
-	_, err := b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
-		Commands: []models.BotCommand{
-			{Command: handler.CommandStart, Description: "Получить свою персональную ссылку"},
-			{Command: handler.CommandHelp, Description: "Как пользоваться ботом"},
-			{Command: handler.CommandMyLink, Description: "Показать текущую персональную ссылку"},
-			{Command: handler.CommandRevoke, Description: "Отозвать ссылку и выпустить новую"},
-			{Command: handler.CommandBlock, Description: "Ответом на сообщение - заблокировать отправителя"},
-			{Command: handler.CommandStop, Description: "Выйти из текущей переписки"},
-			{Command: handler.CommandDelete, Description: "Удалить аккаунт и все связанные данные"},
-		},
+	return retryTelegramStartup(ctx, func(ctx context.Context) error {
+		_, err := b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+			Commands: []models.BotCommand{
+				{Command: handler.CommandStart, Description: "Получить свою персональную ссылку"},
+				{Command: handler.CommandHelp, Description: "Как пользоваться ботом"},
+				{Command: handler.CommandMyLink, Description: "Показать текущую персональную ссылку"},
+				{Command: handler.CommandRevoke, Description: "Отозвать ссылку и выпустить новую"},
+				{Command: handler.CommandBlock, Description: "Ответом на сообщение - заблокировать отправителя"},
+				{Command: handler.CommandStop, Description: "Выйти из текущей переписки"},
+				{Command: handler.CommandDelete, Description: "Удалить аккаунт и все связанные данные"},
+			},
+		})
+		return err
 	})
-	return err
 }
 
 func initBotOptions(
@@ -106,6 +112,7 @@ func initBotOptions(
 	}
 
 	return []bot.Option{
+		bot.WithSkipGetMe(),
 		bot.WithMiddlewares(
 			middleware.NewPrivateChatMiddleware(),
 			middleware.NewLoggingMiddleware(logger, keys),
@@ -126,9 +133,66 @@ func resolveBotUsername(ctx context.Context, botToken string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	me, err := probe.GetMe(ctx)
+
+	var username string
+	err = retryTelegramStartup(ctx, func(ctx context.Context) error {
+		me, getMeErr := probe.GetMe(ctx)
+		if getMeErr != nil {
+			return getMeErr
+		}
+		username = me.Username
+		return nil
+	})
 	if err != nil {
 		return "", err
 	}
-	return me.Username, nil
+	return username, nil
+}
+
+func retryTelegramStartup(ctx context.Context, operation func(context.Context) error) error {
+	return retryTelegramStartupWithPolicy(
+		ctx,
+		operation,
+		telegramStartupMaxRetries,
+		telegramStartupRetryDelay,
+	)
+}
+
+func retryTelegramStartupWithPolicy(
+	ctx context.Context,
+	operation func(context.Context) error,
+	maxRetries int,
+	initialDelay time.Duration,
+) error {
+	delay := initialDelay
+	for retries := 0; ; retries++ {
+		err := operation(ctx)
+		if err == nil {
+			return nil
+		}
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		if retries == maxRetries || !isRetryableTelegramError(err) {
+			return err
+		}
+
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+		delay *= 2
+	}
+}
+
+func isRetryableTelegramError(err error) bool {
+	return !errors.Is(err, context.Canceled) &&
+		!errors.Is(err, bot.ErrorBadRequest) &&
+		!errors.Is(err, bot.ErrorUnauthorized) &&
+		!errors.Is(err, bot.ErrorForbidden) &&
+		!errors.Is(err, bot.ErrorNotFound) &&
+		!errors.Is(err, bot.ErrorConflict)
 }

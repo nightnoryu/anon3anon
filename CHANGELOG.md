@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.2
+
+- minor dependencies upgrades
+
 ## v1.0.1
 
 - incoming anonymous messages are now prefixed with a short notice

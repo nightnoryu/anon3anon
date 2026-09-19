@@ -13,9 +13,15 @@ import (
 )
 
 func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger) {
+	handler, err := health.Handler(store, logger)
+	if err != nil {
+		logger.Error(err, "create health handlers")
+		return
+	}
+
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           health.Handler(store, logger),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

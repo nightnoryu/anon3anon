@@ -60,7 +60,7 @@ The container serves an HTTP health server on `ANON3ANON_HEALTH_ADDR` (default
 | Path       | Meaning                                                                        |
 |------------|--------------------------------------------------------------------------------|
 | `/healthz` | Liveness. `200 ok` whenever the process is running.                            |
-| `/readyz`  | Readiness. Pings the database; `200 ok` on success, `503 not ready` otherwise. |
+| `/readyz`  | Readiness. Pings the database; `200 ok` on success, `503 unavailable` otherwise. |
 
 Wire `/healthz` to a liveness check and `/readyz` to a readiness check. Nothing
 else listens on a port.

@@ -159,7 +159,7 @@ keyed `chat_ref`, chat type, message ID, a coarse kind (`text` / `command` /
 username, no raw ID.** At `debug` an additional line carries the raw chat ID,
 user ID, username, and message text - for diagnosis only.
 
-The health endpoints (`/healthz`, `/readyz`) return only `ok` or `not ready` and
+The health endpoints (`/healthz`, `/readyz`) return only `ok` or `unavailable` and
 expose no data.
 
 ## Retention

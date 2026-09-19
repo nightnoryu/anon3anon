@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	kitahealth "github.com/nightnoryu/go-kita/health"
 	"github.com/nightnoryu/go-kita/log"
 )
 
@@ -14,26 +15,29 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
-func Handler(store Pinger, logger log.Logger) http.Handler {
+func Handler(store Pinger, logger log.Logger) (http.Handler, error) {
+	liveness, err := kitahealth.NewLivenessHandler(kitahealth.LivenessConfig{})
+	if err != nil {
+		return nil, err
+	}
+
+	readiness, err := kitahealth.NewReadinessHandler(kitahealth.ReadinessConfig{
+		Timeout:      pingTimeout,
+		CheckTimeout: pingTimeout,
+		Checks: []kitahealth.NamedCheck{
+			{Name: "sqlite", Check: store.Ping},
+		},
+		OnFailure: func(name string, err error) {
+			logger.WithFields(log.Fields{"dependency": name}).Error(err, "readiness check failed")
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	mux := http.NewServeMux()
+	mux.Handle("/healthz", liveness)
+	mux.Handle("/readyz", readiness)
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
-
-	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), pingTimeout)
-		defer cancel()
-
-		if err := store.Ping(ctx); err != nil {
-			logger.Error(err)
-			http.Error(w, "not ready", http.StatusServiceUnavailable)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
-
-	return mux
+	return mux, nil
 }

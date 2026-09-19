@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	stdlog "log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-telegram/bot"
@@ -11,7 +14,6 @@ import (
 	"github.com/nightnoryu/go-kita/env"
 	"github.com/nightnoryu/go-kita/jsonlog"
 	"github.com/nightnoryu/go-kita/log"
-	"github.com/nightnoryu/go-kita/runtime"
 
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 	"anon3anon/pkg/infrastructure/telegram/handler"
@@ -22,12 +24,13 @@ import (
 const (
 	appID                     = "anon3anon"
 	defaultLogLevel           = jsonlog.InfoLevel
-	telegramStartupMaxRetries = 4
+	telegramStartupMaxRetries = 3
 	telegramStartupRetryDelay = time.Second
 )
 
 func main() {
-	ctx := runtime.ListenOSKillSignals(context.Background())
+	ctx, cancelFunc := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancelFunc()
 
 	conf, err := env.ParseEnv[config](appID)
 	if err != nil {
@@ -39,6 +42,7 @@ func main() {
 		stdlog.Fatal(err)
 	}
 	logger := initLogger(level)
+	defer func() { _ = logger.Sync() }()
 
 	keys, err := initKeyring(conf.PseudonymKey)
 	if err != nil {

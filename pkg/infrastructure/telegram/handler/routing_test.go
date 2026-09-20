@@ -23,6 +23,7 @@ type noopLogger struct{}
 func (noopLogger) WithFields(log.Fields) log.Logger { return noopLogger{} }
 func (noopLogger) Debug(...any)                     {}
 func (noopLogger) Info(...any)                      {}
+func (noopLogger) Warn(...any)                      {}
 func (noopLogger) Error(error, ...any)              {}
 
 type fakeClient struct {

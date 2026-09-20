@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/nightnoryu/go-kita/env"
-	"github.com/nightnoryu/go-kita/jsonlog"
 	"github.com/nightnoryu/go-kita/log"
 
 	"anon3anon/pkg/infrastructure/storage/sqlite"
@@ -22,7 +21,6 @@ import (
 
 const (
 	appID                     = "anon3anon"
-	defaultLogLevel           = jsonlog.InfoLevel
 	telegramStartupMaxRetries = 3
 	telegramStartupRetryDelay = time.Second
 )
@@ -40,11 +38,10 @@ func main() {
 		stdlog.Fatal(err)
 	}
 
-	level, err := parseLogLevel(conf.LogLevel)
+	logger, err := initLogger(conf.LogLevel)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
-	logger := initLogger(level)
 	defer func() { _ = logger.Sync() }()
 
 	keys, err := initKeyring(conf.PseudonymKey)

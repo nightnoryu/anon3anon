@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/nightnoryu/go-kita/jsonlog"
+)
 
 type config struct {
 	TelegramBotToken string        `env:"TELEGRAM_BOT_TOKEN"`
@@ -11,7 +15,7 @@ type config struct {
 	RateLimitWindow  time.Duration `env:"RATE_LIMIT_WINDOW" envDefault:"1h"`
 	RateLimitMax     int           `env:"RATE_LIMIT_MAX" envDefault:"100"`
 	HealthAddr       string        `env:"HEALTH_ADDR" envDefault:":8080"`
-	LogLevel         string        `env:"LOG_LEVEL" envDefault:"info"`
+	LogLevel         jsonlog.Level `env:"LOG_LEVEL" envDefault:"info"`
 
 	PseudonymKey string `env:"PSEUDONYM_KEY"`
 

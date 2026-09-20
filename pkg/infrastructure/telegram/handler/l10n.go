@@ -11,7 +11,6 @@ const (
 	LanguageEnglish = "en"
 )
 
-// Messages contains all user-visible strings for one bot-wide language.
 type Messages struct {
 	messageSent, replySent, newAnonymousMessagePrefix      string
 	joined, invalidLink, ownLink                           string
@@ -27,7 +26,6 @@ type Messages struct {
 	deleteCommandDescription                               string
 }
 
-// MessagesForLanguage returns the catalog selected by ANON3ANON_LANGUAGE.
 func MessagesForLanguage(language string) (Messages, error) {
 	switch language {
 	case LanguageRussian:

@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: anon3anon-config
 data:
+  ANON3ANON_LANGUAGE: "ru"
+  ANON3ANON_OWNER_LINK: "@nightnoryu"
   ANON3ANON_RATE_LIMIT_WINDOW: "1h"
   ANON3ANON_RATE_LIMIT_MAX: "100"
   ANON3ANON_LOG_LEVEL: "info"

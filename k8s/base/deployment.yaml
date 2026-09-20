@@ -86,6 +86,16 @@ spec:
                   name: anon3anon-secrets
                   key: ANON3ANON_ALLOWED_USER_IDS
                   optional: true
+            - name: ANON3ANON_LANGUAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: anon3anon-config
+                  key: ANON3ANON_LANGUAGE
+            - name: ANON3ANON_OWNER_LINK
+              valueFrom:
+                configMapKeyRef:
+                  name: anon3anon-config
+                  key: ANON3ANON_OWNER_LINK
             - name: ANON3ANON_PSEUDONYM_KEY
               valueFrom:
                 secretKeyRef:

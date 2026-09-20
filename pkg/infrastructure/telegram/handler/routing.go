@@ -53,25 +53,25 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 			return true
 		}
 		if blocked {
-			d.reply(ctx, c, msg.Chat.ID, blockedSenderMessage)
+			d.reply(ctx, c, msg.Chat.ID, d.Messages.blockedSender)
 			return true
 		}
 	}
 
 	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID, inbound); err != nil {
 		if errors.Is(err, errRateLimited) {
-			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
+			d.reply(ctx, c, msg.Chat.ID, d.Messages.rateLimited)
 			return true
 		}
 		if errors.Is(err, errUnsupportedContent) {
-			d.reply(ctx, c, msg.Chat.ID, unsupportedContentMessage)
+			d.reply(ctx, c, msg.Chat.ID, d.Messages.unsupportedContent)
 			return true
 		}
 		d.Logger.Error(err)
-		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.deliveryFailed)
 		return true
 	}
-	d.reply(ctx, c, msg.Chat.ID, replySentMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.replySent)
 	return true
 }
 
@@ -84,7 +84,7 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 		return
 	}
 	if !ok {
-		d.reply(ctx, c, msg.Chat.ID, noSessionMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.noSession)
 		return
 	}
 
@@ -94,7 +94,7 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 		return
 	}
 	if !ok {
-		d.reply(ctx, c, msg.Chat.ID, noSessionMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.noSession)
 		return
 	}
 
@@ -104,24 +104,24 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 		return
 	}
 	if blocked {
-		d.reply(ctx, c, msg.Chat.ID, blockedSenderMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.blockedSender)
 		return
 	}
 
 	if err := d.relay(ctx, c, msg, owner.ChatID, owner.TgUserID, true); err != nil {
 		if errors.Is(err, errRateLimited) {
-			d.reply(ctx, c, msg.Chat.ID, rateLimitedMessage)
+			d.reply(ctx, c, msg.Chat.ID, d.Messages.rateLimited)
 			return
 		}
 		if errors.Is(err, errUnsupportedContent) {
-			d.reply(ctx, c, msg.Chat.ID, unsupportedContentMessage)
+			d.reply(ctx, c, msg.Chat.ID, d.Messages.unsupportedContent)
 			return
 		}
 		d.Logger.Error(err)
-		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.deliveryFailed)
 		return
 	}
-	d.reply(ctx, c, msg.Chat.ID, messageSentMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.messageSent)
 }
 
 func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, msg *models.Message) {
@@ -131,7 +131,7 @@ func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, 
 		return
 	}
 	if !ok {
-		d.reply(ctx, c, msg.Chat.ID, noSessionToStopMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.noSessionToStop)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, 
 		d.Logger.Error(err)
 		return
 	}
-	d.reply(ctx, c, msg.Chat.ID, stoppedMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.stopped)
 }
 
 // relay copies src into destChatID and records the mapping needed to route a
@@ -176,7 +176,7 @@ func (d DependencyContainer) relay(
 	if inboundAnonymous {
 		if _, err := c.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: destChatID,
-			Text:   newAnonymousMessagePrefix,
+			Text:   d.Messages.newAnonymousMessagePrefix,
 		}); err != nil {
 			if refundErr := d.Store.RefundMessage(ctx, src.Chat.ID, destChatID); refundErr != nil {
 				d.Logger.Error(refundErr)
@@ -224,7 +224,7 @@ func (d DependencyContainer) relay(
 // anonymous message to stop its sender from reaching them again.
 func (d DependencyContainer) block(ctx context.Context, c telegramClient, msg *models.Message) {
 	if msg.ReplyToMessage == nil {
-		d.reply(ctx, c, msg.Chat.ID, blockNeedsReplyMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.blockNeedsReply)
 		return
 	}
 
@@ -234,14 +234,14 @@ func (d DependencyContainer) block(ctx context.Context, c telegramClient, msg *m
 		return
 	}
 	if !ok || relay.OwnerUserID != msg.From.ID {
-		d.reply(ctx, c, msg.Chat.ID, blockUnknownMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.blockUnknown)
 		return
 	}
 
 	if err := d.Store.Block(ctx, relay.OwnerUserID, relay.OriginChatID); err != nil {
 		d.Logger.Error(err)
-		d.reply(ctx, c, msg.Chat.ID, deliveryFailedMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.deliveryFailed)
 		return
 	}
-	d.reply(ctx, c, msg.Chat.ID, blockedMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.blocked)
 }

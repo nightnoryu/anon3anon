@@ -48,5 +48,5 @@ func (d DependencyContainer) revokeLink(ctx context.Context, c telegramClient, m
 		return
 	}
 
-	d.reply(ctx, c, msg.Chat.ID, fmt.Sprintf(newLinkMessageTemplate, buildMyLink(d.BotUsername, newToken)))
+	d.reply(ctx, c, msg.Chat.ID, fmt.Sprintf(d.Messages.newLinkTemplate, buildMyLink(d.BotUsername, newToken)))
 }

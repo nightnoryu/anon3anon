@@ -20,6 +20,8 @@ type DependencyContainer struct {
 	Logger       log.Logger
 	BotUsername  string
 	AllowedUsers AllowList
+	Messages     Messages
+	OwnerLink    string
 }
 
 func (d DependencyContainer) reply(ctx context.Context, c telegramClient, chatID int64, text string) {

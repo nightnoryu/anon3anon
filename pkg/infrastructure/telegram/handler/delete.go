@@ -20,12 +20,12 @@ func (d DependencyContainer) deleteAccount(ctx context.Context, c telegramClient
 	deleted, err := d.Store.DeleteUser(ctx, msg.From.ID)
 	if err != nil {
 		d.Logger.Error(err)
-		d.reply(ctx, c, msg.Chat.ID, accountDeleteFailedMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.accountDeleteFailed)
 		return
 	}
 	if !deleted {
-		d.reply(ctx, c, msg.Chat.ID, noAccountToDeleteMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.noAccountToDelete)
 		return
 	}
-	d.reply(ctx, c, msg.Chat.ID, accountDeletedMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.accountDeleted)
 }

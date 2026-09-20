@@ -11,7 +11,7 @@ import (
 // allow list) and replies with their personal link.
 func (d DependencyContainer) registerRecipient(ctx context.Context, c telegramClient, msg *models.Message) {
 	if !d.AllowedUsers.Allowed(msg.From.ID) {
-		d.reply(ctx, c, msg.Chat.ID, notAllowedMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.registrationNotAllowed(d.OwnerLink))
 		return
 	}
 
@@ -21,7 +21,7 @@ func (d DependencyContainer) registerRecipient(ctx context.Context, c telegramCl
 		return
 	}
 
-	d.reply(ctx, c, msg.Chat.ID, fmt.Sprintf(linkMessageTemplate, buildMyLink(d.BotUsername, user.LinkToken)))
+	d.reply(ctx, c, msg.Chat.ID, fmt.Sprintf(d.Messages.linkTemplate, buildMyLink(d.BotUsername, user.LinkToken)))
 }
 
 // joinByToken points the sender's chat at the owner of the given link token so
@@ -33,11 +33,11 @@ func (d DependencyContainer) joinByToken(ctx context.Context, c telegramClient, 
 		return
 	}
 	if !ok {
-		d.reply(ctx, c, msg.Chat.ID, invalidLinkMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.invalidLink)
 		return
 	}
 	if owner.TgUserID == msg.From.ID {
-		d.reply(ctx, c, msg.Chat.ID, ownLinkMessage)
+		d.reply(ctx, c, msg.Chat.ID, d.Messages.ownLink)
 		return
 	}
 
@@ -45,5 +45,5 @@ func (d DependencyContainer) joinByToken(ctx context.Context, c telegramClient, 
 		d.Logger.Error(err)
 		return
 	}
-	d.reply(ctx, c, msg.Chat.ID, joinedMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.joined)
 }

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-telegram/bot"
-	"github.com/go-telegram/bot/models"
 	"github.com/nightnoryu/go-kita/env"
 	"github.com/nightnoryu/go-kita/jsonlog"
 	"github.com/nightnoryu/go-kita/log"
@@ -33,6 +32,10 @@ func main() {
 	defer cancelFunc()
 
 	conf, err := env.ParseEnv[config](appID)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+	messages, err := handler.MessagesForLanguage(conf.Language)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -62,7 +65,7 @@ func main() {
 	startHealthServer(ctx, conf.HealthAddr, store, logger)
 	startRetentionSweeper(ctx, conf, store, logger)
 
-	options, err := initBotOptions(ctx, conf, store, keys, logger)
+	options, err := initBotOptions(ctx, conf, store, keys, logger, messages)
 	if err != nil {
 		logger.FatalError(err)
 	}
@@ -72,25 +75,17 @@ func main() {
 		logger.FatalError(err)
 	}
 
-	if err := registerCommands(ctx, b); err != nil {
+	if err := registerCommands(ctx, b, messages); err != nil {
 		logger.FatalError(err)
 	}
 
 	b.Start(ctx)
 }
 
-func registerCommands(ctx context.Context, b *bot.Bot) error {
+func registerCommands(ctx context.Context, b *bot.Bot, messages handler.Messages) error {
 	return retryTelegramStartup(ctx, func(ctx context.Context) error {
 		_, err := b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
-			Commands: []models.BotCommand{
-				{Command: handler.CommandStart, Description: "Получить свою персональную ссылку"},
-				{Command: handler.CommandHelp, Description: "Как пользоваться ботом"},
-				{Command: handler.CommandMyLink, Description: "Показать текущую персональную ссылку"},
-				{Command: handler.CommandRevoke, Description: "Отозвать ссылку и выпустить новую"},
-				{Command: handler.CommandBlock, Description: "Ответом на сообщение - заблокировать отправителя"},
-				{Command: handler.CommandStop, Description: "Выйти из текущей переписки"},
-				{Command: handler.CommandDelete, Description: "Удалить аккаунт и все связанные данные"},
-			},
+			Commands: messages.CommandDescriptions(),
 		})
 		return err
 	})
@@ -102,6 +97,7 @@ func initBotOptions(
 	store *sqlite.Store,
 	keys *pseudonym.Keyring,
 	logger log.Logger,
+	messages handler.Messages,
 ) ([]bot.Option, error) {
 	username, err := resolveBotUsername(ctx, conf.TelegramBotToken)
 	if err != nil {
@@ -113,6 +109,8 @@ func initBotOptions(
 		Logger:       logger,
 		BotUsername:  username,
 		AllowedUsers: handler.NewAllowList(conf.AllowedUserIDs),
+		Messages:     messages,
+		OwnerLink:    conf.OwnerLink,
 	}
 
 	return []bot.Option{

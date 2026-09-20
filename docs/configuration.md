@@ -11,6 +11,8 @@ prefixed with `ANON3ANON_`. There is no configuration file.
 | `ANON3ANON_PSEUDONYM_KEY`            | yes      | -                    | Master key used to pseudonymize sender identifiers at rest. Base64 (standard or URL alphabet, padded or not) or hex, decoding to **at least 32 bytes**. Generate with `openssl rand -base64 32`. The process exits on startup if it is missing or too short. |
 | `ANON3ANON_DATABASE_PATH`            | no       | `/data/anon3anon.db` | Path to the SQLite database file. The parent directory must be writable by the process user.                                                                                                                                                                 |
 | `ANON3ANON_ALLOWED_USER_IDS`         | no       | *(empty = everyone)* | Comma-separated Telegram user IDs permitted to register as recipients. Empty means anyone may register. Senders are never restricted by this list. Look up an ID with [@userinfobot](https://t.me/userinfobot).                                              |
+| `ANON3ANON_LANGUAGE`                 | no       | `ru`                 | Bot language: `ru` or `en`. This applies to all bot messages and command descriptions. |
+| `ANON3ANON_OWNER_LINK`               | no       | *(empty)*            | Link to the bot owner, shown only when a recipient registration is rejected by `ANON3ANON_ALLOWED_USER_IDS`. |
 | `ANON3ANON_RATE_LIMIT_WINDOW`        | no       | `1h`                 | Rate-limit bucket size, as a Go duration (`30m`, `2h`, `24h`). `0` disables rate limiting.                                                                                                                                                                   |
 | `ANON3ANON_RATE_LIMIT_MAX`           | no       | `100`                | Maximum inbound anonymous messages per sender -> recipient pair per window. Recipient replies are not counted. `0` disables rate limiting.                                                                                                                   |
 | `ANON3ANON_HEALTH_ADDR`              | no       | `:8080`              | Listen address for the health HTTP server that serves `/healthz` and `/readyz`.                                                                                                                                                                              |
@@ -47,6 +49,12 @@ Use `debug` only while diagnosing a problem, and lower it again afterward.
 The allow list restricts registration as a *recipient* only. Anyone who opens a
 recipient's personal link can send anonymous messages regardless of this setting.
 Leave it empty to let anyone register.
+
+### `ANON3ANON_OWNER_LINK`
+
+When `ANON3ANON_ALLOWED_USER_IDS` restricts recipient registration, set this to
+the owner's contact link (for example, `https://t.me/example`). The link is
+omitted from the rejection message when this variable is empty.
 
 ### Rate limiting
 

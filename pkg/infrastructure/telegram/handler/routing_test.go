@@ -55,6 +55,8 @@ func (f *fakeClient) lastSend() string {
 
 func newTestDeps(t *testing.T, allowed ...int64) (DependencyContainer, *sqlite.Store) {
 	t.Helper()
+	messages, err := MessagesForLanguage(LanguageRussian)
+	require.NoError(t, err)
 	keys, err := pseudonym.NewKeyring(bytes.Repeat([]byte("k"), pseudonym.MinKeyLen))
 	require.NoError(t, err)
 
@@ -67,6 +69,7 @@ func newTestDeps(t *testing.T, allowed ...int64) (DependencyContainer, *sqlite.S
 		Logger:       noopLogger{},
 		BotUsername:  "testbot",
 		AllowedUsers: NewAllowList(allowed),
+		Messages:     messages,
 	}, store
 }
 
@@ -106,6 +109,18 @@ func TestRegisterRecipientRejectedWhenNotOnAllowList(t *testing.T) {
 	_, ok, err := store.UserByID(ctx, 100)
 	require.NoError(t, err)
 	assert.False(t, ok, "rejected user must not be persisted")
+}
+
+func TestRegisterRecipientRejectedWithOwnerLink(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	d, _ := newTestDeps(t, 999)
+	d.OwnerLink = "https://t.me/bot_owner"
+	c := &fakeClient{}
+
+	d.registerRecipient(ctx, c, testMsg(100, 100, "/start"))
+
+	assert.Equal(t, "Регистрация новых получателей закрыта. Свяжитесь с владельцем бота: https://t.me/bot_owner", c.lastSend())
 }
 
 func TestJoinByToken(t *testing.T) {

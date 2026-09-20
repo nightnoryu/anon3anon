@@ -19,5 +19,5 @@ func NewHelpHandler(d DependencyContainer) bot.HandlerFunc {
 // sendHelp replies with usage instructions covering both the recipient and the
 // sender flows.
 func (d DependencyContainer) sendHelp(ctx context.Context, c telegramClient, msg *models.Message) {
-	d.reply(ctx, c, msg.Chat.ID, helpMessage)
+	d.reply(ctx, c, msg.Chat.ID, d.Messages.help)
 }

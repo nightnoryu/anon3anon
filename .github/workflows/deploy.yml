@@ -2,6 +2,7 @@ name: Apply Kubernetes Manifests
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   deploy:

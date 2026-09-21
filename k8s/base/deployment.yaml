@@ -50,7 +50,7 @@ spec:
               memory: 32Mi
             limits:
               cpu: 200m
-              memory: 128Mi
+              memory: 256Mi
           readinessProbe:
             tcpSocket:
               port: warp-proxy

@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.0
+
+- bot messages and Telegram command descriptions can now be shown in Russian or English with `ANON3ANON_LANGUAGE` (Russian remains the default)
+- restricted recipient registration can now include an owner contact link through `ANON3ANON_OWNER_LINK`
+- the bot now shuts down cleanly on `SIGTERM` and retries Telegram startup fewer times before failing
+- Telegram client errors are now emitted as structured JSON logs
+- dependencies were updated, including `go-kita`
+
 ## v1.0.3
 
 - improve startup reliability with telegram retries

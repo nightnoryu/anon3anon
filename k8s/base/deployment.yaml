@@ -26,7 +26,7 @@ spec:
             value: "1"
       initContainers:
         - name: warp
-          image: caomingjun/warp:latest
+          image: caomingjun/warp:2026.7.1377.0-2.12.0
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
           ports:
@@ -66,7 +66,6 @@ spec:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest
           imagePullPolicy: IfNotPresent
-          restartPolicy: Always
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001

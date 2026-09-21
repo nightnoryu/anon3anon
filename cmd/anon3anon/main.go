@@ -112,6 +112,9 @@ func initBotOptions(
 
 	return []bot.Option{
 		bot.WithSkipGetMe(),
+		bot.WithErrorsHandler(func(err error) {
+			logger.Error(err)
+		}),
 		bot.WithMiddlewares(
 			middleware.NewPrivateChatMiddleware(),
 			middleware.NewLoggingMiddleware(logger, keys),

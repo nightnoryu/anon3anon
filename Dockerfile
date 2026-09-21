@@ -1,6 +1,7 @@
 FROM alpine:3.23
 
-RUN addgroup -g 10001 -S anon3anon \
+RUN apk add --no-cache sqlite \
+    && addgroup -g 10001 -S anon3anon \
     && adduser -u 10001 -S -G anon3anon -H -s /sbin/nologin anon3anon \
     && mkdir -p /data \
     && chown anon3anon:anon3anon /data

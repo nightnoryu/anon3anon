@@ -12,6 +12,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/nightnoryu/go-kita/env"
 	"github.com/nightnoryu/go-kita/log"
+	"github.com/nightnoryu/go-kita/retry"
 
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 	"anon3anon/pkg/infrastructure/telegram/handler"
@@ -20,9 +21,9 @@ import (
 )
 
 const (
-	appID                     = "anon3anon"
-	telegramStartupMaxRetries = 3
-	telegramStartupRetryDelay = time.Second
+	appID                      = "anon3anon"
+	telegramStartupMaxAttempts = 3
+	telegramStartupRetryDelay  = time.Second
 )
 
 func main() {
@@ -152,42 +153,16 @@ func resolveBotUsername(ctx context.Context, botToken string) (string, error) {
 }
 
 func retryTelegramStartup(ctx context.Context, operation func(context.Context) error) error {
-	return retryTelegramStartupWithPolicy(
-		ctx,
-		operation,
-		telegramStartupMaxRetries,
-		telegramStartupRetryDelay,
-	)
-}
-
-func retryTelegramStartupWithPolicy(
-	ctx context.Context,
-	operation func(context.Context) error,
-	maxRetries int,
-	initialDelay time.Duration,
-) error {
-	delay := initialDelay
-	for retries := 0; ; retries++ {
-		err := operation(ctx)
-		if err == nil {
-			return nil
-		}
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
-		}
-		if retries == maxRetries || !isRetryableTelegramError(err) {
-			return err
-		}
-
-		timer := time.NewTimer(delay)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return ctx.Err()
-		case <-timer.C:
-		}
-		delay *= 2
+	retryer, err := retry.New(retry.Config{
+		MaxAttempts:  telegramStartupMaxAttempts,
+		InitialDelay: telegramStartupRetryDelay,
+		Multiplier:   2,
+	})
+	if err != nil {
+		return err
 	}
+
+	return retryer.Do(ctx, operation, isRetryableTelegramError)
 }
 
 func isRetryableTelegramError(err error) bool {

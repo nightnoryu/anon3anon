@@ -18,14 +18,6 @@ import (
 	"anon3anon/pkg/pseudonym"
 )
 
-type noopLogger struct{}
-
-func (noopLogger) WithFields(log.Fields) log.Logger { return noopLogger{} }
-func (noopLogger) Debug(...any)                     {}
-func (noopLogger) Info(...any)                      {}
-func (noopLogger) Warn(...any)                      {}
-func (noopLogger) Error(error, ...any)              {}
-
 type fakeClient struct {
 	copies    []bot.CopyMessageParams
 	sends     []bot.SendMessageParams
@@ -67,7 +59,7 @@ func newTestDeps(t *testing.T, allowed ...int64) (DependencyContainer, *sqlite.S
 
 	return DependencyContainer{
 		Store:        store,
-		Logger:       noopLogger{},
+		Logger:       log.NoopLogger{},
 		BotUsername:  "testbot",
 		AllowedUsers: NewAllowList(allowed),
 		Messages:     messages,

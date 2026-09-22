@@ -20,6 +20,8 @@ github.com/nightnoryu/go-kita v1.7.0 h1:FZNV02ImWr5hYgMLrPsu1bMsC84MClLB02Qy9LcS
 github.com/nightnoryu/go-kita v1.7.0/go.mod h1:GDVTaufQ/rRYqgQC8FH3gI8GAy4/SEqtfeQBYmmNJdA=
 github.com/nightnoryu/go-kita v1.8.0 h1:LXztCqMn2C+CaBIVG/NQlohEd4GMRHUUN1RKE4IJY6k=
 github.com/nightnoryu/go-kita v1.8.0/go.mod h1:GDVTaufQ/rRYqgQC8FH3gI8GAy4/SEqtfeQBYmmNJdA=
+github.com/nightnoryu/go-kita v1.9.0 h1:9ZH6SBh4EQPHIbFV2Yw2v9GgmbVFA/hqryZbEtPYiVI=
+github.com/nightnoryu/go-kita v1.9.0/go.mod h1:GDVTaufQ/rRYqgQC8FH3gI8GAy4/SEqtfeQBYmmNJdA=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=

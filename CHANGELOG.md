@@ -3,6 +3,7 @@
 ## v1.2.0
 
 - logs now include `event_type` and `duration_ms` fields for metrics
+- logs now include a bounded `outcome` field
 
 ## v1.1.0
 

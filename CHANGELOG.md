@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.0
+
+- logs now include `event_type` and `duration_ms` fields for metrics
+
 ## v1.1.0
 
 - bot messages and Telegram command descriptions can now be shown in Russian or English with `ANON3ANON_LANGUAGE` (Russian remains the default)

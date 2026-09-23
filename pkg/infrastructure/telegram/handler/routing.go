@@ -8,6 +8,7 @@ import (
 	"github.com/go-telegram/bot/models"
 
 	"anon3anon/pkg/domain"
+	"anon3anon/pkg/infrastructure/telegram"
 )
 
 var (
@@ -34,7 +35,7 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 
 	relay, ok, err := d.Store.LookupRelay(ctx, msg.Chat.ID, msg.ReplyToMessage.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return true
 	}
 	if !ok {
@@ -49,10 +50,11 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 	if inbound {
 		blocked, err := d.Store.IsBlocked(ctx, relay.OwnerUserID, msg.Chat.ID)
 		if err != nil {
-			d.Logger.Error(err)
+			d.logError(ctx, err)
 			return true
 		}
 		if blocked {
+			telegram.SetOutcome(ctx, telegram.OutcomeBlocked)
 			d.reply(ctx, c, msg.Chat.ID, d.Messages.blockedSender)
 			return true
 		}
@@ -60,6 +62,7 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 
 	if err := d.relay(ctx, c, msg, relay.OriginChatID, relay.OwnerUserID, inbound); err != nil {
 		if errors.Is(err, errRateLimited) {
+			telegram.SetOutcome(ctx, telegram.OutcomeRateLimited)
 			d.reply(ctx, c, msg.Chat.ID, d.Messages.rateLimited)
 			return true
 		}
@@ -67,7 +70,7 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 			d.reply(ctx, c, msg.Chat.ID, d.Messages.unsupportedContent)
 			return true
 		}
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		d.reply(ctx, c, msg.Chat.ID, d.Messages.deliveryFailed)
 		return true
 	}
@@ -80,7 +83,7 @@ func (d DependencyContainer) tryRouteReply(ctx context.Context, c telegramClient
 func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient, msg *models.Message) {
 	ownerUserID, ok, err := d.Store.GetSession(ctx, msg.Chat.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	if !ok {
@@ -90,7 +93,7 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 
 	owner, ok, err := d.Store.UserByID(ctx, ownerUserID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	if !ok {
@@ -100,16 +103,18 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 
 	blocked, err := d.Store.IsBlocked(ctx, owner.TgUserID, msg.Chat.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	if blocked {
+		telegram.SetOutcome(ctx, telegram.OutcomeBlocked)
 		d.reply(ctx, c, msg.Chat.ID, d.Messages.blockedSender)
 		return
 	}
 
 	if err := d.relay(ctx, c, msg, owner.ChatID, owner.TgUserID, true); err != nil {
 		if errors.Is(err, errRateLimited) {
+			telegram.SetOutcome(ctx, telegram.OutcomeRateLimited)
 			d.reply(ctx, c, msg.Chat.ID, d.Messages.rateLimited)
 			return
 		}
@@ -117,7 +122,7 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 			d.reply(ctx, c, msg.Chat.ID, d.Messages.unsupportedContent)
 			return
 		}
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		d.reply(ctx, c, msg.Chat.ID, d.Messages.deliveryFailed)
 		return
 	}
@@ -127,7 +132,7 @@ func (d DependencyContainer) routeToOwner(ctx context.Context, c telegramClient,
 func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, msg *models.Message) {
 	ownerUserID, ok, err := d.Store.GetSession(ctx, msg.Chat.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	if !ok {
@@ -136,12 +141,12 @@ func (d DependencyContainer) stopSession(ctx context.Context, c telegramClient, 
 	}
 
 	if err := d.Store.ClearSession(ctx, msg.Chat.ID); err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 
 	if _, err := d.Store.ClearRelaysForSender(ctx, msg.Chat.ID, ownerUserID); err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	d.reply(ctx, c, msg.Chat.ID, d.Messages.stopped)
@@ -179,7 +184,7 @@ func (d DependencyContainer) relay(
 			Text:   d.Messages.newAnonymousMessagePrefix,
 		}); err != nil {
 			if refundErr := d.Store.RefundMessage(ctx, src.Chat.ID, destChatID); refundErr != nil {
-				d.Logger.Error(refundErr)
+				d.logError(ctx, refundErr)
 			}
 			return err
 		}
@@ -195,7 +200,7 @@ func (d DependencyContainer) relay(
 		// consumed back so a failed delivery does not count against the sender.
 		if inboundAnonymous {
 			if refundErr := d.Store.RefundMessage(ctx, src.Chat.ID, destChatID); refundErr != nil {
-				d.Logger.Error(refundErr)
+				d.logError(ctx, refundErr)
 			}
 		}
 		return err
@@ -207,14 +212,14 @@ func (d DependencyContainer) relay(
 		OriginChatID: src.Chat.ID,
 		OwnerUserID:  ownerUserID,
 	}); err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 	}
 
 	// An inbound anonymous message means the sender's conversation is still
 	// live; slide its retention window forward so PurgeExpired leaves it alone.
 	if inboundAnonymous {
 		if err := d.Store.TouchSession(ctx, src.Chat.ID); err != nil {
-			d.Logger.Error(err)
+			d.logError(ctx, err)
 		}
 	}
 	return nil
@@ -230,7 +235,7 @@ func (d DependencyContainer) block(ctx context.Context, c telegramClient, msg *m
 
 	relay, ok, err := d.Store.LookupRelay(ctx, msg.Chat.ID, msg.ReplyToMessage.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	if !ok || relay.OwnerUserID != msg.From.ID {
@@ -239,7 +244,7 @@ func (d DependencyContainer) block(ctx context.Context, c telegramClient, msg *m
 	}
 
 	if err := d.Store.Block(ctx, relay.OwnerUserID, relay.OriginChatID); err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		d.reply(ctx, c, msg.Chat.ID, d.Messages.deliveryFailed)
 		return
 	}

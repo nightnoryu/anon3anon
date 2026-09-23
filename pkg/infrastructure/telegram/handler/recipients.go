@@ -17,7 +17,7 @@ func (d DependencyContainer) registerRecipient(ctx context.Context, c telegramCl
 
 	user, err := d.Store.UpsertUser(ctx, msg.From.ID, msg.Chat.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 
@@ -29,7 +29,7 @@ func (d DependencyContainer) registerRecipient(ctx context.Context, c telegramCl
 func (d DependencyContainer) joinByToken(ctx context.Context, c telegramClient, msg *models.Message, tokenValue string) {
 	owner, ok, err := d.Store.UserByToken(ctx, tokenValue)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	if !ok {
@@ -42,7 +42,7 @@ func (d DependencyContainer) joinByToken(ctx context.Context, c telegramClient, 
 	}
 
 	if err := d.Store.SetSession(ctx, msg.Chat.ID, owner.TgUserID); err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		return
 	}
 	d.reply(ctx, c, msg.Chat.ID, d.Messages.joined)

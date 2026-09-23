@@ -8,6 +8,7 @@ import (
 	"github.com/nightnoryu/go-kita/log"
 
 	"anon3anon/pkg/domain"
+	"anon3anon/pkg/infrastructure/telegram"
 )
 
 type telegramClient interface {
@@ -26,6 +27,11 @@ type DependencyContainer struct {
 
 func (d DependencyContainer) reply(ctx context.Context, c telegramClient, chatID int64, text string) {
 	if _, err := c.SendMessage(ctx, &bot.SendMessageParams{ChatID: chatID, Text: text}); err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 	}
+}
+
+func (d DependencyContainer) logError(ctx context.Context, err error) {
+	telegram.SetOutcome(ctx, telegram.OutcomeError)
+	d.Logger.Error(err)
 }

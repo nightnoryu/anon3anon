@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"anon3anon/pkg/infrastructure/telegram"
 	"anon3anon/pkg/pseudonym"
 )
 
@@ -21,11 +22,13 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 		message     *models.Message
 		wantEvent   string
 		wantCommand string
+		wantOutcome telegram.Outcome
 	}{
 		{
-			name:      "anonymous message",
-			message:   testMessage("hello"),
-			wantEvent: eventTypeAnonymousMessage,
+			name:        "anonymous message",
+			message:     testMessage("hello"),
+			wantEvent:   eventTypeAnonymousMessage,
+			wantOutcome: telegram.OutcomeSuccess,
 		},
 		{
 			name: "reply",
@@ -35,19 +38,22 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 				Text:           "reply",
 				ReplyToMessage: &models.Message{ID: 98},
 			},
-			wantEvent: eventTypeReply,
+			wantEvent:   eventTypeReply,
+			wantOutcome: telegram.OutcomeSuccess,
 		},
 		{
 			name:        "known command",
 			message:     testCommand("/start token", 6),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: "start",
+			wantOutcome: telegram.OutcomeSuccess,
 		},
 		{
 			name:        "command addressed to bot",
 			message:     testCommand("/help@anon3anon_bot", 19),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: "help",
+			wantOutcome: telegram.OutcomeSuccess,
 		},
 		{
 			name: "command takes precedence over reply",
@@ -58,12 +64,14 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 			}(),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: "block",
+			wantOutcome: telegram.OutcomeSuccess,
 		},
 		{
 			name:        "unknown command is bounded",
 			message:     testCommand("/unregistered", 13),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: unknownCommand,
+			wantOutcome: telegram.OutcomeSuccess,
 		},
 	}
 
@@ -84,6 +92,7 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 			entry := logger.state.entries[0]
 			assert.Equal(t, "telegram event processed", entry.message)
 			assert.Equal(t, tt.wantEvent, entry.fields[eventTypeField])
+			assert.Equal(t, string(tt.wantOutcome), entry.fields[outcomeField])
 			if tt.wantCommand == "" {
 				assert.NotContains(t, entry.fields, commandField)
 			} else {
@@ -97,6 +106,32 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 			assert.NotContains(t, entry.fields, userIDField)
 			assert.NotContains(t, entry.fields, usernameField)
 			assert.NotContains(t, entry.fields, textField)
+		})
+	}
+}
+
+func TestLoggingMiddlewareEmitsRecordedOutcome(t *testing.T) {
+	t.Parallel()
+
+	for _, outcome := range []telegram.Outcome{
+		telegram.OutcomeRateLimited,
+		telegram.OutcomeBlocked,
+		telegram.OutcomeError,
+	} {
+		t.Run(string(outcome), func(t *testing.T) {
+			t.Parallel()
+
+			logger := newCaptureLogger()
+			wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil)(
+				func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
+					telegram.SetOutcome(ctx, outcome)
+				},
+			)
+
+			wrapped(context.Background(), nil, &models.Update{ID: 7, Message: testMessage("hello")})
+
+			require.Len(t, logger.state.entries, 1)
+			assert.Equal(t, string(outcome), logger.state.entries[0].fields[outcomeField])
 		})
 	}
 }

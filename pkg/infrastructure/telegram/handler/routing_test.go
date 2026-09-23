@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"anon3anon/pkg/infrastructure/storage/sqlite"
+	"anon3anon/pkg/infrastructure/telegram"
 	"anon3anon/pkg/pseudonym"
 )
 
@@ -188,7 +189,7 @@ func TestRouteToOwnerDeliversMessageAndRecordsRelay(t *testing.T) {
 
 func TestRouteToOwnerBlockedSender(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := telegram.WithOutcome(context.Background())
 	d, store := newTestDeps(t)
 
 	owner, err := store.UpsertUser(ctx, 10, 1000)
@@ -201,6 +202,7 @@ func TestRouteToOwnerBlockedSender(t *testing.T) {
 
 	assert.Equal(t, blockedSenderMessage, c.lastSend())
 	assert.Empty(t, c.copies, "blocked sender's message must not be delivered")
+	assert.Equal(t, telegram.OutcomeBlocked, telegram.OutcomeFromContext(ctx))
 }
 
 func TestRouteToOwnerRateLimited(t *testing.T) {
@@ -218,9 +220,11 @@ func TestRouteToOwnerRateLimited(t *testing.T) {
 	}
 	assert.Equal(t, messageSentMessage, c.lastSend())
 
-	d.routeToOwner(ctx, c, testMsg(5, 50, "spam over quota"))
+	limitedCtx := telegram.WithOutcome(ctx)
+	d.routeToOwner(limitedCtx, c, testMsg(5, 50, "spam over quota"))
 	assert.Equal(t, rateLimitedMessage, c.lastSend())
 	assert.Len(t, c.copies, 3, "over-quota message must not be delivered")
+	assert.Equal(t, telegram.OutcomeRateLimited, telegram.OutcomeFromContext(limitedCtx))
 }
 
 func TestTryRouteReplyOwnerRepliesAreNotRateLimited(t *testing.T) {
@@ -282,7 +286,7 @@ func TestTryRouteReplyInboundRepliesStayRateLimited(t *testing.T) {
 
 func TestRouteToOwnerDeliveryFailure(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := telegram.WithOutcome(context.Background())
 	d, store := newTestDeps(t)
 
 	owner, err := store.UpsertUser(ctx, 10, 1000)
@@ -293,6 +297,7 @@ func TestRouteToOwnerDeliveryFailure(t *testing.T) {
 	d.routeToOwner(ctx, c, testMsg(5, 50, "hi"))
 
 	assert.Equal(t, deliveryFailedMessage, c.lastSend())
+	assert.Equal(t, telegram.OutcomeError, telegram.OutcomeFromContext(ctx))
 }
 
 func TestRouteToOwnerFailedDeliveryDoesNotBurnQuota(t *testing.T) {

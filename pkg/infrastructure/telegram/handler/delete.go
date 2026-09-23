@@ -19,7 +19,7 @@ func NewDeleteHandler(d DependencyContainer) bot.HandlerFunc {
 func (d DependencyContainer) deleteAccount(ctx context.Context, c telegramClient, msg *models.Message) {
 	deleted, err := d.Store.DeleteUser(ctx, msg.From.ID)
 	if err != nil {
-		d.Logger.Error(err)
+		d.logError(ctx, err)
 		d.reply(ctx, c, msg.Chat.ID, d.Messages.accountDeleteFailed)
 		return
 	}

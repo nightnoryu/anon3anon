@@ -9,6 +9,7 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/nightnoryu/go-kita/log"
 
+	"anon3anon/pkg/infrastructure/telegram"
 	"anon3anon/pkg/pseudonym"
 )
 
@@ -30,6 +31,7 @@ const (
 	eventTypeField   = "event_type"
 	commandField     = "command"
 	durationMSField  = "duration_ms"
+	outcomeField     = "outcome"
 
 	eventTypeAnonymousMessage = "anonymous_message"
 	eventTypeReply            = "reply"
@@ -54,6 +56,7 @@ func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring, supportedC
 			eventType, command := eventDetails(msg, commands)
 			startedAt := time.Now()
 
+			ctx = telegram.WithOutcome(ctx)
 			next(ctx, bot, update)
 
 			fields := log.Fields{
@@ -66,6 +69,7 @@ func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring, supportedC
 				hasMediaField:    kind != messageKindText && kind != messageKindCommand,
 				eventTypeField:   eventType,
 				durationMSField:  float64(time.Since(startedAt)) / float64(time.Millisecond),
+				outcomeField:     string(telegram.OutcomeFromContext(ctx)),
 			}
 			if command != "" {
 				fields[commandField] = command

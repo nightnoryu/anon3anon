@@ -153,11 +153,16 @@ Written for both directions of a conversation.
 
 ### Logs
 
-At `info` (default) a message produces one structured line with: update ID,
-keyed `chat_ref`, chat type, message ID, a coarse kind (`text` / `command` /
-`photo` / etc.), whether it is a reply, and whether it has media. **No text, no
-username, no raw ID.** At `debug` an additional line carries the raw chat ID,
-user ID, username, and message text - for diagnosis only.
+At `info` (default) a processed message produces one structured completion line
+with: update ID, keyed `chat_ref`, chat type, message ID, a coarse kind (`text`
+/ `command` / `photo` / etc.), whether it is a reply, whether it has media, a
+bounded `event_type`, and numeric `duration_ms`. Event types are
+`anonymous_message`, `reply`, and `command_call`; command calls also include a
+bounded `command` name. Unknown commands are recorded as `unknown`, rather than
+their user-supplied text, so the field remains safe to aggregate into metrics.
+`chat_ref`, update ID, and message ID must not be made Grafana/Loki labels.
+**No text, no username, no raw ID.** At `debug` an additional line carries the
+raw chat ID, user ID, username, and message text - for diagnosis only.
 
 The health endpoints (`/healthz`, `/readyz`) return only `ok` or `unavailable` and
 expose no data.

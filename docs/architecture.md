@@ -50,9 +50,12 @@ SQLite implementation is swappable and is faked in handler tests.
 
 1. **Private-chat middleware** - drops any update that is not from a private
    chat. Groups and channels are never served.
-2. **Logging middleware** - emits one structured line per message. It references
-   the chat only by its keyed reference at `info`; raw IDs, usernames, and text
-   are `debug`-only.
+2. **Logging middleware** - emits one structured completion line per message.
+   It references the chat only by its keyed reference at `info`; raw IDs,
+   usernames, and text are `debug`-only. The completion record includes a
+   bounded `event_type` (`anonymous_message`, `reply`, or `command_call`) and
+   numeric `duration_ms`, measured across handler processing. Command calls also
+   include the bounded `command` name.
 3. **Handler dispatch** - messages that start with a registered command
    (`/start`, `/help`, `/mylink`, `/revoke`, `/block`, `/stop`, `/delete`) go to
    that command's handler. Everything else goes to the **message router**.

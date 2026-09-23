@@ -118,7 +118,7 @@ func initBotOptions(
 		}),
 		bot.WithMiddlewares(
 			middleware.NewPrivateChatMiddleware(),
-			middleware.NewLoggingMiddleware(logger, keys),
+			middleware.NewLoggingMiddleware(logger, keys, handler.CommandNames()),
 		),
 		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommandStartOnly, handler.NewStartCommandHandler(deps)),
 		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommandStartOnly, handler.NewHelpHandler(deps)),

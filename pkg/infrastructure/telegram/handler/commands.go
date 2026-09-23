@@ -9,3 +9,15 @@ const (
 	CommandStop   = "stop"
 	CommandDelete = "delete"
 )
+
+func CommandNames() []string {
+	return []string{
+		CommandStart,
+		CommandHelp,
+		CommandMyLink,
+		CommandRevoke,
+		CommandBlock,
+		CommandStop,
+		CommandDelete,
+	}
+}

@@ -140,7 +140,10 @@ The secret must carry `ANON3ANON_TELEGRAM_BOT_TOKEN` and
 
    ```shell
    kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
+   kubectl rollout restart deployment/anon3anon -n anon3anon
+   kubectl rollout status deployment/anon3anon -n anon3anon --timeout=300s
    ```
 
 The `--enable-alpha-plugins --enable-exec` flags are required for `ksops` to run
-during the build.
+during the build. Kubernetes reads Secret-backed environment variables when a pod
+starts, so applying a changed Secret requires restarting the deployment.

@@ -31,6 +31,9 @@ jobs:
         run: |
           kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
 
+      - name: Restart bot to load Secret environment variables
+        run: kubectl rollout restart deployment/anon3anon -n anon3anon
+
       - name: Wait for rollout
         run: |
           kubectl rollout status deployment/anon3anon -n anon3anon --timeout=300s

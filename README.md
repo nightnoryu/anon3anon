@@ -1,3 +1,7 @@
+<p align="center">
+	<img src="https://github.com/user-attachments/assets/21484ffa-225b-4a99-88c3-1b6f95497b8a" width="180" title="anon3anon Logo">
+</p>
+
 <h1 align="center">anon3anon</h1>
 <p align="center"><i>Talk without trading identities</i></p>
 

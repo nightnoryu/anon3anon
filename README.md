@@ -1,14 +1,14 @@
-# anon3anon
+<h1 align="center">anon3anon</h1>
+<p align="center"><i>Talk without trading identities</i></p>
 
-*Talk without trading identities.*
+<p align="center">
+    <a href="https://github.com/nightnoryu/anon3anon/releases"><img src="https://img.shields.io/github/release/nightnoryu/anon3anon.svg?cache-control=no-cache"></a>
+    <a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
+    <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
+</p>
 
-<a href="https://github.com/nightnoryu/anon3anon/releases"><img src="https://img.shields.io/github/release/nightnoryu/anon3anon.svg?cache-control=no-cache"></a>
-<a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
-<a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
-
-**anon3anon** is an anonymous contact relay for Telegram. It lets two people
+An anonymous contact relay for Telegram. anon3anon lets two people
 communicate without exposing their Telegram identities to each other.
-
 Share a personal link to receive anonymous messages; reply to continue the
 conversation without either side seeing the other's identity.
 

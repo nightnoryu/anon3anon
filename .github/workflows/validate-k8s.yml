@@ -4,7 +4,7 @@ on:
   pull_request:
     paths: &k8s-paths
       - 'k8s/base/**'
-      - '.github/workflows/k8s.yml'
+      - '.github/workflows/validate-k8s.yml'
   push:
     branches: [ main ]
     paths: *k8s-paths

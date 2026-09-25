@@ -12,4 +12,4 @@ generators:
 
 images:
   - name: ghcr.io/nightnoryu/anon3anon
-    newTag: 1.3.0
+    newTag: 1.4.0

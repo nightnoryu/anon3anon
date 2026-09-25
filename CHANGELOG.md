@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## v1.4.0
 
-- export Telegram message counts by event type and outcome, and processing duration by event type, at `/metrics`
+- export Telegram message count metrics by event type and outcome, and processing duration by event type
+- export retention sweep metrics, removed row counts, and the last successful sweep time
 
 ## v1.3.0
 

@@ -92,52 +92,52 @@ a fresh random nonce per write; reversible **only** with the key.
 
 ### `users` - one row per registered recipient
 
-| Column | Contents |
-|--------|----------|
-| `tg_user_id` | Recipient's Telegram user ID, **in the clear** |
-| `chat_id` | Recipient's chat ID with the bot, **in the clear** |
+| Column       | Contents                                                                  |
+| ------------ | ------------------------------------------------------------------------- |
+| `tg_user_id` | Recipient's Telegram user ID, **in the clear**                            |
+| `chat_id`    | Recipient's chat ID with the bot, **in the clear**                        |
 | `link_token` | Random 64-bit token (base64url), the `?start=` value in the personal link |
-| `created_at` | When `/start` first registered the account |
+| `created_at` | When `/start` first registered the account                                |
 
 Only people who ran `/start` have a row here. Pure senders do not.
 
 ### `sessions` - where a sender's next first-contact message goes
 
-| Column | Contents |
-|--------|----------|
-| `sender_ref` | Keyed ref of the sender's chat ID |
-| `owner_user_id` | Recipient's Telegram user ID, in the clear |
-| `updated_at` | Bumped on every inbound message from that sender |
+| Column          | Contents                                         |
+| --------------- | ------------------------------------------------ |
+| `sender_ref`    | Keyed ref of the sender's chat ID                |
+| `owner_user_id` | Recipient's Telegram user ID, in the clear       |
+| `updated_at`    | Bumped on every inbound message from that sender |
 
 ### `relays` - reply routing for already-delivered messages
 
-| Column | Contents |
-|--------|----------|
-| `dest_ref` | Keyed ref of the chat the copy was delivered to |
-| `dest_msg_id` | Message ID of the delivered copy |
-| `origin_ref` | Keyed ref of the chat a reply must go back to |
-| `origin_seal` | Sealed (encrypted) origin chat ID - decryptable with the key, because a reply has to actually be delivered to that chat |
-| `owner_user_id` | Recipient's Telegram user ID, in the clear |
-| `created_at` | When the mapping was written |
+| Column          | Contents                                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `dest_ref`      | Keyed ref of the chat the copy was delivered to                                                                         |
+| `dest_msg_id`   | Message ID of the delivered copy                                                                                        |
+| `origin_ref`    | Keyed ref of the chat a reply must go back to                                                                           |
+| `origin_seal`   | Sealed (encrypted) origin chat ID - decryptable with the key, because a reply has to actually be delivered to that chat |
+| `owner_user_id` | Recipient's Telegram user ID, in the clear                                                                              |
+| `created_at`    | When the mapping was written                                                                                            |
 
 Written for both directions of a conversation.
 
 ### `blocks` - per-recipient sender bans
 
-| Column | Contents |
-|--------|----------|
+| Column          | Contents                                   |
+| --------------- | ------------------------------------------ |
 | `owner_user_id` | Recipient's Telegram user ID, in the clear |
-| `sender_ref` | Keyed ref of the blocked sender's chat ID |
-| `created_at` | When the block was created |
+| `sender_ref`    | Keyed ref of the blocked sender's chat ID  |
+| `created_at`    | When the block was created                 |
 
 ### `message_rates` - rate-limit counters
 
-| Column | Contents |
-|--------|----------|
-| `sender_ref` | Keyed ref of the sender's chat ID |
+| Column         | Contents                                   |
+| -------------- | ------------------------------------------ |
+| `sender_ref`   | Keyed ref of the sender's chat ID          |
 | `recipient_id` | Recipient's Telegram user ID, in the clear |
-| `bucket` | Time-window index |
-| `count` | Messages in that window |
+| `bucket`       | Time-window index                          |
+| `count`        | Messages in that window                    |
 
 ## Data NOT stored
 
@@ -175,12 +175,12 @@ A background sweep runs every `ANON3ANON_RETENTION_SWEEP_INTERVAL` (default `1h`
 and deletes rows older than `ANON3ANON_RETENTION_AGE` (default `720h`, i.e. 30
 days). Set either to `0` to disable the sweep entirely.
 
-| Table | Deleted when | Note |
-|-------|--------------|------|
-| `sessions` | `updated_at` older than the cutoff | Each inbound message bumps `updated_at`, so an actively used conversation is not pruned |
-| `relays` | `created_at` older than the cutoff | **Not** bumped by activity. A reply mapping always expires `RETENTION_AGE` after it was created; after that, replying to that old delivered message no longer routes |
-| `blocks` | `created_at` older than the cutoff | **A block is forgotten after `RETENTION_AGE`.** The banned sender can reach the recipient again unless re-blocked. Set `RETENTION_AGE=0` to keep blocks permanently |
-| `message_rates` | window older than the cutoff | Only swept while rate limiting is enabled |
+| Table           | Deleted when                       | Note                                                                                                                                                                 |
+| --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessions`      | `updated_at` older than the cutoff | Each inbound message bumps `updated_at`, so an actively used conversation is not pruned                                                                              |
+| `relays`        | `created_at` older than the cutoff | **Not** bumped by activity. A reply mapping always expires `RETENTION_AGE` after it was created; after that, replying to that old delivered message no longer routes |
+| `blocks`        | `created_at` older than the cutoff | **A block is forgotten after `RETENTION_AGE`.** The banned sender can reach the recipient again unless re-blocked. Set `RETENTION_AGE=0` to keep blocks permanently  |
+| `message_rates` | window older than the cutoff       | Only swept while rate limiting is enabled                                                                                                                            |
 
 `users` rows are **never** pruned by retention. A registered recipient persists
 until `/delete`.

@@ -57,11 +57,11 @@ volumes:
 The container serves an HTTP health server on `ANON3ANON_HEALTH_ADDR` (default
 `:8080`):
 
-| Path       | Meaning                                                                        |
-|------------|--------------------------------------------------------------------------------|
-| `/healthz` | Liveness. `200 ok` whenever the process is running.                            |
-| `/readyz`  | Readiness. Pings the database; `200 ok` on success, `503 unavailable` otherwise. |
-| `/metrics` | Prometheus metrics, including Go heap and process resident memory usage. |
+| Path         | Meaning                                                                          |
+| ------------ | -------------------------------------------------------------------------------- |
+| `/healthz`   | Liveness. `200 ok` whenever the process is running.                              |
+| `/readyz`    | Readiness. Pings the database; `200 ok` on success, `503 unavailable` otherwise. |
+| `/metrics`   | Prometheus metrics, including Go heap and process resident memory usage.         |
 
 Wire `/healthz` to a liveness check and `/readyz` to a readiness check. Nothing
 else listens on a port. Configure Prometheus to scrape `/metrics` on port `8080`

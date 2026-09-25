@@ -56,20 +56,20 @@ mise run dev:reload   # rebuild ./bin, then `docker compose restart anon3anon`
 
 Defined in [`mise.toml`](../mise.toml):
 
-| Task                  | Action                                                                         |
-|-----------------------|--------------------------------------------------------------------------------|
-| `mise run`            | `build` then `check` (the `default` task)                                      |
-| `mise run build`      | `go build -trimpath -o ./bin/anon3anon ./cmd/anon3anon` (depends on `modules`) |
-| `mise run modules`    | `go mod download`                                                              |
-| `mise run tidy`       | `go mod tidy`                                                                  |
-| `mise run check`      | `lint` + `test:unit`                                                           |
-| `mise run lint`       | `golangci-lint run`                                                            |
-| `mise run test:unit`  | `go test ./...`                                                                |
-| `mise run dev`        | build, then `docker compose up -d --wait`                                      |
-| `mise run dev:reload` | build, then `docker compose restart anon3anon`                                 |
-| `mise run dev:down`   | `docker compose down`                                                          |
-| `mise run dev:ps`     | `docker compose ps`                                                            |
-| `mise run dev:logs`   | `docker compose logs -f`                                                       |
+| Task                    | Action                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| `mise run`              | `build` then `check` (the `default` task)                                        |
+| `mise run build`        | `go build -trimpath -o ./bin/anon3anon ./cmd/anon3anon` (depends on `modules`)   |
+| `mise run modules`      | `go mod download`                                                                |
+| `mise run tidy`         | `go mod tidy`                                                                    |
+| `mise run check`        | `lint` + `test:unit`                                                             |
+| `mise run lint`         | `golangci-lint run`                                                              |
+| `mise run test:unit`    | `go test ./...`                                                                  |
+| `mise run dev`          | build, then `docker compose up -d --wait`                                        |
+| `mise run dev:reload`   | build, then `docker compose restart anon3anon`                                   |
+| `mise run dev:down`     | `docker compose down`                                                            |
+| `mise run dev:ps`       | `docker compose ps`                                                              |
+| `mise run dev:logs`     | `docker compose logs -f`                                                         |
 
 The build environment is fixed by `mise.toml`: `GOOS=linux`, `GOARCH=amd64`,
 `CGO_ENABLED=0` (the SQLite driver is `modernc.org/sqlite`, pure Go - no C

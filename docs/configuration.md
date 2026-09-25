@@ -58,12 +58,13 @@ omitted from the rejection message when this variable is empty.
 
 ### Rate limiting
 
-Rate limiting is per sender -> recipient pair. One recipient being spammed does not
-consume any other recipient's quota. Set either `ANON3ANON_RATE_LIMIT_WINDOW` or
-`ANON3ANON_RATE_LIMIT_MAX` to `0` to disable it entirely. Failed deliveries do not
-consume quota.
+Rate limiting is per sender -> recipient pair. One recipient being spammed
+does not consume any other recipient's quota. Set either
+`ANON3ANON_RATE_LIMIT_WINDOW` or `ANON3ANON_RATE_LIMIT_MAX` to `0` to disable it
+entirely. Failed deliveries do not consume quota.
 
 ### Durations
 
-Duration values are parsed by Go's `time.ParseDuration`: `300ms`, `1h30m`, `24h`.
+Duration values are parsed by Go's `time.ParseDuration`: `300ms`, `1h30m`,
+`24h`.
 There is no unit larger than `h`, so a 30-day retention age is `720h`.

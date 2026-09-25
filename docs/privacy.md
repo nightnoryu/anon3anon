@@ -17,10 +17,10 @@ operator makes it - see [Operator trust](#operator-trust) and
 - **A stolen database does not name anonymous senders.** The database never
   stores an anonymous sender's Telegram user ID or chat ID in the clear. It
   stores a keyed reference derived from the chat ID (see
-  [Pseudonymization](#pseudonymization)). Without `ANON3ANON_PSEUDONYM_KEY`,
-  which is meant to live in a secret store and not on the data volume, a stolen
-  database file, volume snapshot, or backup cannot turn those references back
-  into accounts.
+  [Pseudonymization](#pseudonymization-and-encryption)). Without
+  `ANON3ANON_PSEUDONYM_KEY`, which is meant to live in a secret store and not
+  on the data volume, a stolen database file, volume snapshot, or backup
+  cannot turn those references back into accounts.
 - **Message content is never persisted by the bot.** Text, captions, and media
   are passed straight through Telegram's `copyMessage` and are never written to
   the database.

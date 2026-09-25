@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 <p align="center">
 	<img src="https://github.com/user-attachments/assets/21484ffa-225b-4a99-88c3-1b6f95497b8a" width="180" title="anon3anon Logo">
 </p>
@@ -10,6 +11,7 @@
     <a href="https://github.com/nightnoryu/anon3anon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/nightnoryu/anon3anon?cache-control=no-cache"></a>
     <a href="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml"><img src="https://github.com/nightnoryu/anon3anon/actions/workflows/ci.yml/badge.svg?cache-control=no-cache"></a>
 </p>
+<!-- markdownlint-enable -->
 
 An anonymous contact relay for Telegram. anon3anon lets two people
 communicate without exposing their Telegram identities to each other.
@@ -41,11 +43,13 @@ docker run -d --name anon3anon \
   ghcr.io/nightnoryu/anon3anon:latest
 ```
 
-See [deployment documentation](docs/deployment.md) for Compose, Kubernetes, and operational guidance.
+See [deployment documentation](docs/deployment.md) for Compose, Kubernetes,
+and operational guidance.
 
 ## 📚 Documentation
 
-- [Architecture](docs/architecture.md), [configuration](docs/configuration.md), [development](docs/development.md), and [privacy model](docs/privacy.md)
+- [Architecture](docs/architecture.md), [configuration](docs/configuration.md),
+  [development](docs/development.md), and [privacy model](docs/privacy.md)
 - [Changelog](CHANGELOG.md)
 
 ## 📜 License

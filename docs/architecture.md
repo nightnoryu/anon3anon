@@ -4,7 +4,7 @@ anon3anon is a single Go process. It long-polls the Telegram Bot API, routes
 each incoming message to the other side of an anonymous conversation, and keeps
 just enough state in a local SQLite file to make threaded replies work.
 
-```
+```text
     sender <-->  Telegram Bot API  <-->  recipient
                         |
                         |  long polling
@@ -24,14 +24,17 @@ just enough state in a local SQLite file to make threaded replies work.
 ```
 
 Two background goroutines run alongside the update loop: an HTTP server
-(`/healthz`, `/readyz`, `/metrics`) and a retention sweeper. Neither is on the message path.
+(`/healthz`, `/readyz`, `/metrics`) and a retention sweeper. Neither is on the
+message path.
 
 ## Layers
 
-```
-cmd/anon3anon/                 process wiring: config, logger, keyring, health, retention
+```text
+cmd/anon3anon/                 process wiring: config, logger, keyring, health,
+                               retention
 pkg/domain/                    core types + the Store port (interface)
-pkg/pseudonym/                 keyring: keyed references and authenticated encryption
+pkg/pseudonym/                 keyring: keyed references and authenticated
+                               encryption
 pkg/token/                     personal-link token generation
 pkg/infrastructure/
   telegram/middleware/         private-chat gate, structured logging
@@ -102,7 +105,7 @@ conversation survives retention, and dropped by `/stop` (the sender),
 
 Every time the bot copies a message, it records a relay:
 
-```
+```text
   key:    (dest_ref, dest_msg_id)      the copy that was delivered
   value:  origin chat, owner, created_at
 ```
@@ -123,7 +126,7 @@ All of this lives in `pkg/pseudonym`. One master key -
 `ANON3ANON_PSEUDONYM_KEY`, at least 32 bytes - is loaded at startup. Two subkeys
 are derived from it with HKDF-SHA256 under distinct `info` labels:
 
-```
+```text
   master key
     |-- HKDF(info=".../chat-ref/v1")  ->  refKey   (HMAC-SHA256 key)
     |-- HKDF(info=".../chat-seal/v1") ->  sealKey  (AES-256 key)
@@ -215,4 +218,5 @@ constraint.
 
 - [privacy.md](privacy.md) - the threat model these mechanisms serve
 - [configuration.md](configuration.md) - every tunable
-- [deployment.md](deployment.md) - single-replica deployment and the key/volume split
+- [deployment.md](deployment.md) - single-replica deployment and the key/volume
+  split

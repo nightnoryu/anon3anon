@@ -62,13 +62,20 @@ The container serves an HTTP health server on `ANON3ANON_HEALTH_ADDR` (default
 | ------------ | -------------------------------------------------------------------------------- |
 | `/healthz`   | Liveness. `200 ok` whenever the process is running.                              |
 | `/readyz`    | Readiness. Pings the database; `200 ok` on success, `503 unavailable` otherwise. |
-| `/metrics`   | Prometheus metrics, including Go heap and process resident memory usage.         |
+| `/metrics`   | Prometheus message processing, Go runtime, and process metrics.                  |
 <!-- markdownlint-enable MD013 -->
 
 Wire `/healthz` to a liveness check and `/readyz` to a readiness check. Nothing
 else listens on a port. Configure Prometheus to scrape `/metrics` on port `8080`
 from within your trusted network; the endpoint has no authentication. The
 standard Go and process collectors also expose other runtime statistics.
+
+Application metrics are `anon3anon_messages_processed_total{event_type,outcome}`
+and `anon3anon_message_duration_seconds{event_type}`. The duration metric is a
+histogram in seconds. It measures handler execution for message updates only;
+updates without a message are excluded. `success` means the handler completed
+without recording a block, rate limit, or error. It does not guarantee that a
+message was delivered.
 
 ## Persistence and backups
 

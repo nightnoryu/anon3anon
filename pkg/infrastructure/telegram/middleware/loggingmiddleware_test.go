@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -82,7 +83,7 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 
 			logger := newCaptureLogger()
 			completed := false
-			wrapped := NewLoggingMiddleware(logger, testKeyring(t), []string{"start", "help", "block"})(
+			wrapped := NewLoggingMiddleware(logger, testKeyring(t), []string{"start", "help", "block"}, nil)(
 				func(context.Context, *bot.Bot, *models.Update) { completed = true },
 			)
 
@@ -123,7 +124,7 @@ func TestLoggingMiddlewareEmitsRecordedOutcome(t *testing.T) {
 			t.Parallel()
 
 			logger := newCaptureLogger()
-			wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil)(
+			wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil, nil)(
 				func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
 					telegram.SetOutcome(ctx, outcome)
 				},
@@ -142,7 +143,7 @@ func TestLoggingMiddlewareIncludesBaseFieldsInEveryMessageLog(t *testing.T) {
 
 	logger := newCaptureLogger()
 	logger.state.captureAll = true
-	wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil)(
+	wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil, nil)(
 		func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
 			telegram.SetOutcome(ctx, telegram.OutcomeError)
 			telegram.EventLogger(ctx, logger).Error(errors.New("handler failed"))
@@ -164,7 +165,7 @@ func TestLoggingMiddlewareSkipsUpdatesWithoutMessages(t *testing.T) {
 
 	logger := newCaptureLogger()
 	handled := false
-	wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil)(
+	wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil, nil)(
 		func(context.Context, *bot.Bot, *models.Update) { handled = true },
 	)
 
@@ -172,6 +173,31 @@ func TestLoggingMiddlewareSkipsUpdatesWithoutMessages(t *testing.T) {
 
 	assert.False(t, handled)
 	assert.Empty(t, logger.state.entries)
+}
+
+func TestLoggingMiddlewareObservesCompletedMessages(t *testing.T) {
+	t.Parallel()
+
+	var eventType string
+	var outcome telegram.Outcome
+	var duration time.Duration
+	observed := 0
+	wrapped := NewLoggingMiddleware(newCaptureLogger(), testKeyring(t), nil,
+		func(event string, result telegram.Outcome, elapsed time.Duration) {
+			observed++
+			eventType, outcome, duration = event, result, elapsed
+		},
+	)(func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
+		telegram.SetOutcome(ctx, telegram.OutcomeRateLimited)
+	})
+
+	wrapped(context.Background(), nil, &models.Update{ID: 7, Message: testMessage("hello")})
+	wrapped(context.Background(), nil, &models.Update{ID: 8})
+
+	assert.Equal(t, 1, observed)
+	assert.Equal(t, eventTypeAnonymousMessage, eventType)
+	assert.Equal(t, telegram.OutcomeRateLimited, outcome)
+	assert.GreaterOrEqual(t, duration, time.Duration(0))
 }
 
 func testMessage(text string) *models.Message {

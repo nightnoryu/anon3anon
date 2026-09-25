@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -38,7 +39,12 @@ const (
 	unknownCommand            = "unknown"
 )
 
-func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring, supportedCommands []string) bot.Middleware {
+func NewLoggingMiddleware(
+	logger log.Logger,
+	keys *pseudonym.Keyring,
+	supportedCommands []string,
+	observeMessage func(string, telegram.Outcome, time.Duration),
+) bot.Middleware {
 	commands := make(map[string]struct{}, len(supportedCommands))
 	for _, command := range supportedCommands {
 		commands[command] = struct{}{}
@@ -68,7 +74,11 @@ func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring, supportedC
 				fields[commandField] = command
 			}
 			ctx = telegram.WithEventLog(ctx, fields)
+			startedAt := time.Now()
 			next(ctx, bot, update)
+			if observeMessage != nil {
+				observeMessage(eventType, telegram.OutcomeFromContext(ctx), time.Since(startedAt))
+			}
 
 			telegram.EventLogger(ctx, logger).Info("telegram event processed")
 

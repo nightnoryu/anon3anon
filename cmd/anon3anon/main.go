@@ -60,10 +60,11 @@ func main() {
 		}
 	}()
 
-	startHealthServer(ctx, conf.HealthAddr, store, logger)
+	metrics := newAppMetrics()
+	startHealthServer(ctx, conf.HealthAddr, store, logger, metrics)
 	startRetentionSweeper(ctx, conf, store, logger)
 
-	options, err := initBotOptions(ctx, conf, store, keys, logger, messages)
+	options, err := initBotOptions(ctx, conf, store, keys, logger, messages, metrics)
 	if err != nil {
 		logger.FatalError(err)
 	}
@@ -96,6 +97,7 @@ func initBotOptions(
 	keys *pseudonym.Keyring,
 	logger log.Logger,
 	messages handler.Messages,
+	metrics *appMetrics,
 ) ([]bot.Option, error) {
 	username, err := resolveBotUsername(ctx, conf.TelegramBotToken)
 	if err != nil {
@@ -118,7 +120,7 @@ func initBotOptions(
 		}),
 		bot.WithMiddlewares(
 			middleware.NewPrivateChatMiddleware(),
-			middleware.NewLoggingMiddleware(logger, keys, handler.CommandNames()),
+			middleware.NewLoggingMiddleware(logger, keys, handler.CommandNames(), metrics.observeMessage),
 		),
 		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommandStartOnly, handler.NewStartCommandHandler(deps)),
 		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommandStartOnly, handler.NewHelpHandler(deps)),

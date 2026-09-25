@@ -12,7 +12,7 @@ import (
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 )
 
-func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger) {
+func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger, metrics *appMetrics) {
 	healthHandler, err := health.Handler(store, logger)
 	if err != nil {
 		logger.Error(err, "create health handlers")
@@ -21,7 +21,7 @@ func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, lo
 
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           newServerHandler(healthHandler),
+		Handler:           newServerHandler(healthHandler, metrics),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -41,9 +41,9 @@ func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, lo
 	}()
 }
 
-func newServerHandler(healthHandler http.Handler) http.Handler {
+func newServerHandler(healthHandler http.Handler, metrics *appMetrics) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", newMetricsHandler())
+	mux.Handle("/metrics", metrics.handler())
 	mux.Handle("/", healthHandler)
 	return mux
 }

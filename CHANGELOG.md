@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- export Telegram message counts by event type and outcome, and processing duration by event type, at `/metrics`
+
 ## v1.3.0
 
 - Telegram message logs now include shared event fields and processing duration on error,

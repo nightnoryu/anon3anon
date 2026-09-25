@@ -61,9 +61,12 @@ The container serves an HTTP health server on `ANON3ANON_HEALTH_ADDR` (default
 |------------|--------------------------------------------------------------------------------|
 | `/healthz` | Liveness. `200 ok` whenever the process is running.                            |
 | `/readyz`  | Readiness. Pings the database; `200 ok` on success, `503 unavailable` otherwise. |
+| `/metrics` | Prometheus metrics, including Go heap and process resident memory usage. |
 
 Wire `/healthz` to a liveness check and `/readyz` to a readiness check. Nothing
-else listens on a port.
+else listens on a port. Configure Prometheus to scrape `/metrics` on port `8080`
+from within your trusted network; the endpoint has no authentication. The
+standard Go and process collectors also expose other runtime statistics.
 
 ## Persistence and backups
 

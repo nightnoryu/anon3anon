@@ -13,7 +13,7 @@ import (
 )
 
 func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger) {
-	handler, err := health.Handler(store, logger)
+	healthHandler, err := health.Handler(store, logger)
 	if err != nil {
 		logger.Error(err, "create health handlers")
 		return
@@ -21,7 +21,7 @@ func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, lo
 
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           handler,
+		Handler:           newServerHandler(healthHandler),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -39,4 +39,11 @@ func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, lo
 			logger.Error(err)
 		}
 	}()
+}
+
+func newServerHandler(healthHandler http.Handler) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", newMetricsHandler())
+	mux.Handle("/", healthHandler)
+	return mux
 }

@@ -166,7 +166,8 @@ user-supplied text, so these fields remain safe to aggregate into metrics.
 raw chat ID, user ID, username, and message text - for diagnosis only.
 
 The health endpoints (`/healthz`, `/readyz`) return only `ok` or `unavailable` and
-expose no data.
+expose no data. `/metrics` exposes Go runtime and process statistics without
+authentication; restrict access to the HTTP port at the network level.
 
 ## Retention
 

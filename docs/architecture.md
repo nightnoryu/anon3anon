@@ -23,8 +23,8 @@ just enough state in a local SQLite file to make threaded replies work.
                    +---------+
 ```
 
-Two background goroutines run alongside the update loop: an HTTP health server
-(`/healthz`, `/readyz`) and a retention sweeper. Neither is on the message path.
+Two background goroutines run alongside the update loop: an HTTP server
+(`/healthz`, `/readyz`, `/metrics`) and a retention sweeper. Neither is on the message path.
 
 ## Layers
 
@@ -200,9 +200,10 @@ constraint.
 
 ## Background work
 
-- **Health server** (`cmd/anon3anon/healthserver.go`) - `/healthz` always returns
+- **HTTP server** (`cmd/anon3anon/healthserver.go`) - `/healthz` always returns
   `ok` while the process runs; `/readyz` pings the database and returns `503` if
-  that fails. Used by container and Kubernetes probes.
+  that fails. `/metrics` exposes Go runtime and process statistics. The health
+  routes are used by container and Kubernetes probes.
 - **Retention sweeper** (`cmd/anon3anon/retention.go`) - every
   `ANON3ANON_RETENTION_SWEEP_INTERVAL` it calls `Store.PurgeExpired`, deleting
   `sessions` / `relays` / `blocks` / `message_rates` rows past

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.3.0
+
+- Telegram message logs now include shared event fields and processing duration on error,
+  completion, and debug entries
+- Prometheus `/metrics` endpoint now exports Go and process metrics
+
 ## v1.2.0
 
 - logs now include `event_type` and `duration_ms` fields for metrics

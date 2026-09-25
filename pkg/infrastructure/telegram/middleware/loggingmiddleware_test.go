@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/go-telegram/bot"
@@ -136,6 +137,28 @@ func TestLoggingMiddlewareEmitsRecordedOutcome(t *testing.T) {
 	}
 }
 
+func TestLoggingMiddlewareIncludesBaseFieldsInEveryMessageLog(t *testing.T) {
+	t.Parallel()
+
+	logger := newCaptureLogger()
+	logger.state.captureAll = true
+	wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil)(
+		func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
+			telegram.SetOutcome(ctx, telegram.OutcomeError)
+			telegram.EventLogger(ctx, logger).Error(errors.New("handler failed"))
+		},
+	)
+
+	wrapped(context.Background(), nil, &models.Update{ID: 7, Message: testMessage("hello")})
+
+	require.Len(t, logger.state.entries, 3)
+	for _, entry := range logger.state.entries {
+		assert.Equal(t, int64(7), entry.fields[updateIDField])
+		assert.Contains(t, entry.fields, chatRefField)
+		assert.Contains(t, entry.fields, durationMSField)
+	}
+}
+
 func TestLoggingMiddlewareSkipsUpdatesWithoutMessages(t *testing.T) {
 	t.Parallel()
 
@@ -188,7 +211,8 @@ type captureLogger struct {
 }
 
 type captureLogState struct {
-	entries []capturedEntry
+	entries    []capturedEntry
+	captureAll bool
 }
 
 func newCaptureLogger() *captureLogger {
@@ -206,7 +230,12 @@ func (l *captureLogger) WithFields(fields log.Fields) log.Logger {
 	return &captureLogger{state: l.state, fields: merged}
 }
 
-func (l *captureLogger) Debug(...any) {}
+func (l *captureLogger) Debug(args ...any) {
+	if !l.state.captureAll {
+		return
+	}
+	l.state.entries = append(l.state.entries, capturedEntry{fields: l.fields, message: stringify(args)})
+}
 
 func (l *captureLogger) Info(args ...any) {
 	l.state.entries = append(l.state.entries, capturedEntry{fields: l.fields, message: stringify(args)})
@@ -214,7 +243,12 @@ func (l *captureLogger) Info(args ...any) {
 
 func (l *captureLogger) Warn(...any) {}
 
-func (l *captureLogger) Error(error, ...any) {}
+func (l *captureLogger) Error(_ error, args ...any) {
+	if !l.state.captureAll {
+		return
+	}
+	l.state.entries = append(l.state.entries, capturedEntry{fields: l.fields, message: stringify(args)})
+}
 
 func stringify(args []any) string {
 	if len(args) == 1 {

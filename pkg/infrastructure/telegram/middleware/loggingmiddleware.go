@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -54,11 +53,7 @@ func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring, supportedC
 			msg := update.Message
 			kind := messageKind(msg)
 			eventType, command := eventDetails(msg, commands)
-			startedAt := time.Now()
-
 			ctx = telegram.WithOutcome(ctx)
-			next(ctx, bot, update)
-
 			fields := log.Fields{
 				updateIDField:    update.ID,
 				chatRefField:     keys.Ref(msg.Chat.ID),
@@ -68,15 +63,16 @@ func NewLoggingMiddleware(logger log.Logger, keys *pseudonym.Keyring, supportedC
 				isReplyField:     msg.ReplyToMessage != nil,
 				hasMediaField:    kind != messageKindText && kind != messageKindCommand,
 				eventTypeField:   eventType,
-				durationMSField:  float64(time.Since(startedAt)) / float64(time.Millisecond),
-				outcomeField:     string(telegram.OutcomeFromContext(ctx)),
 			}
 			if command != "" {
 				fields[commandField] = command
 			}
-			logger.WithFields(fields).Info("telegram event processed")
+			ctx = telegram.WithEventLog(ctx, fields)
+			next(ctx, bot, update)
 
-			logIdentifiableMessage(logger, update, msg)
+			telegram.EventLogger(ctx, logger).Info("telegram event processed")
+
+			logIdentifiableMessage(ctx, logger, update, msg)
 		}
 	}
 }
@@ -110,7 +106,7 @@ func commandName(m *models.Message) (string, bool) {
 	return "", false
 }
 
-func logIdentifiableMessage(logger log.Logger, update *models.Update, msg *models.Message) {
+func logIdentifiableMessage(ctx context.Context, logger log.Logger, update *models.Update, msg *models.Message) {
 	text := msg.Text
 	if msg.Caption != "" {
 		text = msg.Caption
@@ -127,7 +123,7 @@ func logIdentifiableMessage(logger log.Logger, update *models.Update, msg *model
 		}
 	}
 
-	logger.WithFields(log.Fields{
+	telegram.EventLogger(ctx, logger).WithFields(log.Fields{
 		updateIDField:  update.ID,
 		chatIDField:    msg.Chat.ID,
 		userIDField:    userID,

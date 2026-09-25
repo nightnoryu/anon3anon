@@ -33,5 +33,5 @@ func (d DependencyContainer) reply(ctx context.Context, c telegramClient, chatID
 
 func (d DependencyContainer) logError(ctx context.Context, err error) {
 	telegram.SetOutcome(ctx, telegram.OutcomeError)
-	d.Logger.Error(err)
+	telegram.EventLogger(ctx, d.Logger).Error(err)
 }

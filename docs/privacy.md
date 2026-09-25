@@ -17,7 +17,7 @@ operator makes it - see [Operator trust](#operator-trust) and
 - **A stolen database does not name anonymous senders.** The database never
   stores an anonymous sender's Telegram user ID or chat ID in the clear. It
   stores a keyed reference derived from the chat ID (see
-  [Pseudonymization](#pseudonymization-and-encryption)). Without
+  [Data stored](#data-stored)). Without
   `ANON3ANON_PSEUDONYM_KEY`, which is meant to live in a secret store and not
   on the data volume, a stolen database file, volume snapshot, or backup
   cannot turn those references back into accounts.
@@ -92,12 +92,14 @@ a fresh random nonce per write; reversible **only** with the key.
 
 ### `users` - one row per registered recipient
 
+<!-- markdownlint-disable MD013 -->
 | Column       | Contents                                                                  |
 | ------------ | ------------------------------------------------------------------------- |
 | `tg_user_id` | Recipient's Telegram user ID, **in the clear**                            |
 | `chat_id`    | Recipient's chat ID with the bot, **in the clear**                        |
 | `link_token` | Random 64-bit token (base64url), the `?start=` value in the personal link |
 | `created_at` | When `/start` first registered the account                                |
+<!-- markdownlint-enable MD013 -->
 
 Only people who ran `/start` have a row here. Pure senders do not.
 
@@ -111,6 +113,7 @@ Only people who ran `/start` have a row here. Pure senders do not.
 
 ### `relays` - reply routing for already-delivered messages
 
+<!-- markdownlint-disable MD013 -->
 | Column          | Contents                                                                                                                |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `dest_ref`      | Keyed ref of the chat the copy was delivered to                                                                         |
@@ -119,6 +122,7 @@ Only people who ran `/start` have a row here. Pure senders do not.
 | `origin_seal`   | Sealed (encrypted) origin chat ID - decryptable with the key, because a reply has to actually be delivered to that chat |
 | `owner_user_id` | Recipient's Telegram user ID, in the clear                                                                              |
 | `created_at`    | When the mapping was written                                                                                            |
+<!-- markdownlint-enable MD013 -->
 
 Written for both directions of a conversation.
 
@@ -175,12 +179,14 @@ A background sweep runs every `ANON3ANON_RETENTION_SWEEP_INTERVAL` (default `1h`
 and deletes rows older than `ANON3ANON_RETENTION_AGE` (default `720h`, i.e. 30
 days). Set either to `0` to disable the sweep entirely.
 
+<!-- markdownlint-disable MD013 -->
 | Table           | Deleted when                       | Note                                                                                                                                                                 |
 | --------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sessions`      | `updated_at` older than the cutoff | Each inbound message bumps `updated_at`, so an actively used conversation is not pruned                                                                              |
 | `relays`        | `created_at` older than the cutoff | **Not** bumped by activity. A reply mapping always expires `RETENTION_AGE` after it was created; after that, replying to that old delivered message no longer routes |
 | `blocks`        | `created_at` older than the cutoff | **A block is forgotten after `RETENTION_AGE`.** The banned sender can reach the recipient again unless re-blocked. Set `RETENTION_AGE=0` to keep blocks permanently  |
 | `message_rates` | window older than the cutoff       | Only swept while rate limiting is enabled                                                                                                                            |
+<!-- markdownlint-enable MD013 -->
 
 `users` rows are **never** pruned by retention. A registered recipient persists
 until `/delete`.

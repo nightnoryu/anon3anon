@@ -57,11 +57,13 @@ volumes:
 The container serves an HTTP health server on `ANON3ANON_HEALTH_ADDR` (default
 `:8080`):
 
+<!-- markdownlint-disable MD013 -->
 | Path         | Meaning                                                                          |
 | ------------ | -------------------------------------------------------------------------------- |
 | `/healthz`   | Liveness. `200 ok` whenever the process is running.                              |
 | `/readyz`    | Readiness. Pings the database; `200 ok` on success, `503 unavailable` otherwise. |
 | `/metrics`   | Prometheus metrics, including Go heap and process resident memory usage.         |
+<!-- markdownlint-enable MD013 -->
 
 Wire `/healthz` to a liveness check and `/readyz` to a readiness check. Nothing
 else listens on a port. Configure Prometheus to scrape `/metrics` on port `8080`
@@ -125,7 +127,8 @@ The secret must carry `ANON3ANON_TELEGRAM_BOT_TOKEN` and
 
 ### Applying the prod overlay
 
-1. Install [SOPS](https://github.com/getsops/sops), [age](https://github.com/FiloSottile/age), and
+1. Install [SOPS](https://github.com/getsops/sops),
+   [age](https://github.com/FiloSottile/age), and
    [ksops](https://github.com/viaduct-ai/kustomize-sops).
 2. Generate your own age key pair. Put the public recipient in [`.sops.yaml`](../.sops.yaml)
    (replacing the existing one).
@@ -142,7 +145,8 @@ The secret must carry `ANON3ANON_TELEGRAM_BOT_TOKEN` and
    `SOPS_AGE_KEY_FILE`) and apply:
 
    ```shell
-   kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
+   kustomize build --enable-alpha-plugins --enable-exec k8s/prod \
+     | kubectl apply -f -
    kubectl rollout restart deployment/anon3anon -n anon3anon
    kubectl rollout status deployment/anon3anon -n anon3anon --timeout=300s
    ```

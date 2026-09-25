@@ -5,6 +5,7 @@ prefixed with `ANON3ANON_`. There is no configuration file.
 
 ## Reference
 
+<!-- markdownlint-disable MD013 -->
 | Variable                               | Required   | Default                | Description                                                                                                                                                                                                                                                    |
 | -------------------------------------- | ---------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ANON3ANON_TELEGRAM_BOT_TOKEN`         | yes        | -                      | Bot token from [@BotFather](https://t.me/BotFather). The process exits on startup if it is missing.                                                                                                                                                            |
@@ -19,6 +20,7 @@ prefixed with `ANON3ANON_`. There is no configuration file.
 | `ANON3ANON_RETENTION_AGE`              | no         | `720h`                 | Idle age, as a Go duration, after which a background sweep deletes `sessions` (the timer is bumped by each inbound message), `relays`, `blocks`, and `message_rates` rows. `0` disables retention pruning.                                                     |
 | `ANON3ANON_RETENTION_SWEEP_INTERVAL`   | no         | `1h`                   | How often the retention sweep runs, as a Go duration. `0` disables it.                                                                                                                                                                                         |
 | `ANON3ANON_LOG_LEVEL`                  | no         | `info`                 | One of `debug`, `info`, `warn`, `error`.                                                                                                                                                                                                                       |
+<!-- markdownlint-enable MD013 -->
 
 ## Notes
 

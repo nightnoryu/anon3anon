@@ -23,7 +23,8 @@ mise run        # download modules, build ./bin/anon3anon, lint, run unit tests
 mise run dev    # build, then start the container and wait for it to be healthy
 ```
 
-`mise run` with no task name runs the `default` task: `build` followed by `check` (`lint` + `test:unit`).
+`mise run` with no task name runs the `default` task: `build` followed by
+`check` (`lint` + `test:unit`).
 
 ### The compose override
 
@@ -56,6 +57,7 @@ mise run dev:reload   # rebuild ./bin, then `docker compose restart anon3anon`
 
 Defined in [`mise.toml`](../mise.toml):
 
+<!-- markdownlint-disable MD013 -->
 | Task                    | Action                                                                           |
 | ----------------------- | -------------------------------------------------------------------------------- |
 | `mise run`              | `build` then `check` (the `default` task)                                        |
@@ -70,6 +72,7 @@ Defined in [`mise.toml`](../mise.toml):
 | `mise run dev:down`     | `docker compose down`                                                            |
 | `mise run dev:ps`       | `docker compose ps`                                                              |
 | `mise run dev:logs`     | `docker compose logs -f`                                                         |
+<!-- markdownlint-enable MD013 -->
 
 The build environment is fixed by `mise.toml`: `GOOS=linux`, `GOARCH=amd64`,
 `CGO_ENABLED=0` (the SQLite driver is `modernc.org/sqlite`, pure Go - no C

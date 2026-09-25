@@ -23,7 +23,8 @@ conversation without either side seeing the other's identity.
 - Personal links and two-way anonymous replies
 - Media-friendly relays without Telegram forward attribution
 - Link revocation, sender blocking, conversation exit, and account deletion
-- Per-pair rate limits, optional recipient allow list, and pseudonymized sender records
+- Per-pair rate limits, optional recipient allow list, and pseudonymized sender
+  records
 
 ## 💬 How it works
 

@@ -3,7 +3,7 @@ name: Validate Kubernetes Manifests
 on:
   pull_request:
     paths: &k8s-paths
-      - 'k8s/**'
+      - 'k8s/base/**'
       - '.github/workflows/k8s.yml'
   push:
     branches: [ main ]

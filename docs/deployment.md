@@ -77,6 +77,12 @@ updates without a message are excluded. `success` means the handler completed
 without recording a block, rate limit, or error. It does not guarantee that a
 message was delivered.
 
+Retention metrics are `anon3anon_retention_sweeps_total{result}`,
+`anon3anon_retention_removed_total{table}`, and
+`anon3anon_retention_last_success_timestamp_seconds`. Removed rows include work
+completed before a failed sweep. The timestamp is zero until a sweep succeeds,
+including when retention is disabled.
+
 ## Persistence and backups
 
 - The only state is the SQLite database at `ANON3ANON_DATABASE_PATH`

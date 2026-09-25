@@ -62,7 +62,7 @@ func main() {
 
 	metrics := newAppMetrics()
 	startHealthServer(ctx, conf.HealthAddr, store, logger, metrics)
-	startRetentionSweeper(ctx, conf, store, logger)
+	startRetentionSweeper(ctx, conf, store, logger, metrics)
 
 	options, err := initBotOptions(ctx, conf, store, keys, logger, messages, metrics)
 	if err != nil {

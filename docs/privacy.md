@@ -171,9 +171,9 @@ raw chat ID, user ID, username, and message text - for diagnosis only.
 
 The health endpoints (`/healthz`, `/readyz`) return only `ok` or `unavailable` and
 expose no data. `/metrics` exposes Go runtime, process, and aggregated message
-processing statistics without authentication. Its application metrics use only
-the bounded `event_type` and `outcome` labels; restrict access to the HTTP port
-at the network level.
+processing and retention statistics without authentication. Its application
+metrics use only bounded `event_type`, `outcome`, `result`, and `table` labels;
+restrict access to the HTTP port at the network level.
 
 ## Retention
 

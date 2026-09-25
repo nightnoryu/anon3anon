@@ -9,7 +9,7 @@ import (
 	"anon3anon/pkg/infrastructure/storage/sqlite"
 )
 
-func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger) {
+func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger, metrics *appMetrics) {
 	if conf.RetentionAge <= 0 || conf.RetentionSweepInterval <= 0 {
 		return
 	}
@@ -21,6 +21,7 @@ func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Stor
 
 		cutoff := time.Now().UTC().Add(-conf.RetentionAge)
 		stats, err := store.PurgeExpired(ctx, cutoff)
+		metrics.observeRetentionSweep(stats, err)
 		if stats.Sessions > 0 || stats.Relays > 0 || stats.Blocks > 0 || stats.MessageRates > 0 {
 			logger.WithFields(log.Fields{
 				"sessions_removed":      stats.Sessions,

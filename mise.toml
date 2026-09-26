@@ -43,6 +43,11 @@ run = "go mod download"
 [tasks.build]
 depends = [ "modules" ]
 run = "go build -trimpath -v -o ./bin/anon3anon ./cmd/anon3anon"
+sources = [
+    "go.*",
+    "**/*.go",
+]
+outputs = [ "bin/anon3anon" ]
 
 # Checks
 

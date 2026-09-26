@@ -89,10 +89,8 @@ including when retention is disabled.
   (default `/data/anon3anon.db`). Keep `/data` on a durable volume.
 - The image runs as uid/gid `10001`; the volume must be writable by that user.
   The provided Dockerfile pre-creates `/data` with the right owner.
-- To back up, copy the database file (ideally with the container stopped, or via
-  SQLite's online backup). A backup is only useful together with the matching
-  `ANON3ANON_PSEUDONYM_KEY` - without it the rows cannot be interpreted. Back up
-  the key **separately**.
+- Keep the matching `ANON3ANON_PSEUDONYM_KEY` separately from database backups.
+  Backups contain recipient Telegram IDs.
 
 ## Upgrades
 
@@ -167,3 +165,16 @@ The secret must carry `ANON3ANON_TELEGRAM_BOT_TOKEN` and
 The `--enable-alpha-plugins --enable-exec` flags are required for `ksops` to run
 during the build. Kubernetes reads Secret-backed environment variables when a pod
 starts, so applying a changed Secret requires restarting the deployment.
+
+### Database backup and restore
+
+```shell
+ops/backup-db.sh
+ops/restore-db.sh --yes anon3anon-YYYYMMDDTHHMMSSZ.db
+```
+
+Requires `kubectl` access. Uses the current context and `anon3anon` namespace
+(`KUBE_NAMESPACE` overrides it). Backup creates a UTC timestamped file in the
+current directory using SQLite's online backup command.
+Restore replaces the database on the PVC while the deployment is stopped. If it
+fails, the deployment stays stopped. Back up the current database before restoring.

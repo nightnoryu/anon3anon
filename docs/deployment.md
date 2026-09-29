@@ -120,7 +120,9 @@ container to your own SOCKS5 or HTTP proxy and add `localhost,127.0.0.1,::1` to
 - A [Cloudflare WARP](https://github.com/cmj2002/warp-docker) init container
   (`restartPolicy: Always`, i.e. a native sidecar) that exposes a SOCKS5 proxy on
   `127.0.0.1:1080`; the app container points `HTTP_PROXY`/`HTTPS_PROXY` at it so
-  Telegram egress works where the API is blocked
+  Telegram egress works where the API is blocked. Its probes request the
+  token-free Telegram API root through the proxy; a sustained reachability
+  failure restarts the sidecar.
 - Liveness probe on `/healthz`, readiness probe on `/readyz`
 
 ### What the prod overlay adds

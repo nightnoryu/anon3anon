@@ -51,21 +51,37 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 32Mi
+              memory: 128Mi
             limits:
               cpu: 200m
-              memory: 256Mi
+              memory: 512Mi
           readinessProbe:
-            tcpSocket:
-              port: warp-proxy
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - 'curl -sS --max-time 8 --socks5-hostname 127.0.0.1:1080 -o /dev/null -w "%{http_code}" https://api.telegram.org | grep -Eq "^[234][0-9][0-9]$"'
             initialDelaySeconds: 10
             periodSeconds: 20
+            timeoutSeconds: 10
           startupProbe:
-            tcpSocket:
-              port: warp-proxy
-            periodSeconds: 1
-            timeoutSeconds: 1
-            failureThreshold: 60
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - 'curl -sS --max-time 8 --socks5-hostname 127.0.0.1:1080 -o /dev/null -w "%{http_code}" https://api.telegram.org | grep -Eq "^[234][0-9][0-9]$"'
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 24
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - 'curl -sS --max-time 8 --socks5-hostname 127.0.0.1:1080 -o /dev/null -w "%{http_code}" https://api.telegram.org | grep -Eq "^[234][0-9][0-9]$"'
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 4
       containers:
         - name: anon3anon
           image: ghcr.io/nightnoryu/anon3anon:latest

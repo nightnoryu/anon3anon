@@ -1,6 +1,6 @@
 module anon3anon
 
-go 1.26.0
+go 1.26.8
 
 require (
 	github.com/go-faster/errors v0.8.0

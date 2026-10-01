@@ -2,6 +2,10 @@
 go = "1.26"
 golangci-lint = "2.12.2"
 
+kubectl = "1.37.0"
+kubeconform = "0.8.0"
+"npm:markdownlint-cli2" = "0.23.2"
+
 [env]
 GOOS = "linux"
 GOARCH = "amd64"
@@ -52,10 +56,31 @@ outputs = [ "bin/anon3anon" ]
 # Checks
 
 [tasks.check]
-depends = [ "lint", "test:unit" ]
+depends = [ "test:unit", "lint" ]
+
+[tasks."test:unit"]
+run = "go test ./..."
 
 [tasks.lint]
 run = "golangci-lint run"
 
-[tasks."test:unit"]
-run = "go test ./..."
+# Other checks
+
+[tasks."docs:lint"]
+run = "markdownlint-cli2 README.md 'docs/**/*.md'"
+sources = [
+    "README.md",
+    "docs/**/*.md",
+]
+
+[tasks."k8s:lint"]
+run = """
+set -e
+rendered=$(mktemp)
+trap 'rm -f "$rendered"' EXIT
+kubectl kustomize k8s/base > "$rendered"
+kubeconform -strict -summary -ignore-missing-schemas "$rendered"
+"""
+sources = [
+    "k8s/base/**/*",
+]

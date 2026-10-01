@@ -1,10 +1,8 @@
 [tools]
 go = "1.26"
 golangci-lint = "2.12.2"
-
 kubectl = "1.37.0"
 kubeconform = "0.8.0"
-"npm:markdownlint-cli2" = "0.23.2"
 
 [env]
 GOOS = "linux"
@@ -65,13 +63,6 @@ run = "go test ./..."
 run = "golangci-lint run"
 
 # Other checks
-
-[tasks."docs:lint"]
-run = "markdownlint-cli2 README.md 'docs/**/*.md'"
-sources = [
-    "README.md",
-    "docs/**/*.md",
-]
 
 [tasks."k8s:lint"]
 run = """

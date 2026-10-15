@@ -41,6 +41,8 @@ run = "go mod tidy"
 
 [tasks.modules]
 run = "go mod download"
+sources = [ "go.mod", "go.sum", "../mise.toml" ]
+outputs = { auto = true }
 
 [tasks.build]
 depends = [ "modules" ]

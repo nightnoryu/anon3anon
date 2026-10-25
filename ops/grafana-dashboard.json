@@ -3,7 +3,7 @@
   "kind": "Dashboard",
   "metadata": {
     "name": "ad9vztm",
-    "generation": 4,
+    "generation": 6,
     "creationTimestamp": "2026-10-01T09:14:36Z",
     "labels": {},
     "annotations": {}
@@ -115,8 +115,8 @@
                       "group": "prometheus",
                       "version": "v0",
                       "spec": {
-                        "editorMode": "builder",
-                        "expr": "process_resident_memory_bytes{app=\"anon3anon\"}",
+                        "editorMode": "code",
+                        "expr": "sum without (pod, instance) (\r\n    process_resident_memory_bytes{app=\"anon3anon\"}\r\n)",
                         "legendFormat": "RSS",
                         "range": true
                       },
@@ -137,8 +137,8 @@
                       "group": "prometheus",
                       "version": "v0",
                       "spec": {
-                        "editorMode": "builder",
-                        "expr": "go_memstats_heap_alloc_bytes{app=\"anon3anon\"}",
+                        "editorMode": "code",
+                        "expr": "sum without (pod, instance) (\r\n    go_memstats_heap_alloc_bytes{app=\"anon3anon\"}\r\n)",
                         "instant": false,
                         "legendFormat": "Heap Allocated",
                         "range": true
@@ -256,7 +256,7 @@
                       "version": "v0",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "100 * rate(\r\n  process_cpu_seconds_total{app=\"anon3anon\"}[$__rate_interval]\r\n)",
+                        "expr": "sum without (pod, instance) (\r\n  100 * rate(\r\n    process_cpu_seconds_total{app=\"anon3anon\"}[$__rate_interval]\r\n  )\r\n)",
                         "legendFormat": "__auto",
                         "range": true
                       },
@@ -454,9 +454,9 @@
                       "group": "prometheus",
                       "version": "v0",
                       "spec": {
-                        "editorMode": "builder",
+                        "editorMode": "code",
                         "exemplar": false,
-                        "expr": "go_goroutines{app=\"anon3anon\"}",
+                        "expr": "sum without (pod, instance) (\r\n    go_goroutines{app=\"anon3anon\"}\r\n)",
                         "legendFormat": "__auto",
                         "range": true
                       },
@@ -485,121 +485,6 @@
                   "displayMode": "list",
                   "placement": "bottom",
                   "showLegend": false
-                },
-                "tooltip": {
-                  "hideZeros": false,
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "value": 0,
-                        "color": "green"
-                      },
-                      {
-                        "value": 80,
-                        "color": "red"
-                      }
-                    ]
-                  },
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "axisBorderShow": false,
-                    "axisCenteredZero": false,
-                    "axisColorMode": "text",
-                    "axisLabel": "",
-                    "axisPlacement": "auto",
-                    "barAlignment": 0,
-                    "barWidthFactor": 0.6,
-                    "drawStyle": "line",
-                    "fillOpacity": 0,
-                    "gradientMode": "none",
-                    "hideFrom": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": false
-                    },
-                    "insertNulls": false,
-                    "lineInterpolation": "linear",
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "scaleDistribution": {
-                      "type": "linear"
-                    },
-                    "showPoints": "auto",
-                    "showValues": false,
-                    "spanNulls": false,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    },
-                    "thresholdsStyle": {
-                      "mode": "off"
-                    }
-                  }
-                },
-                "overrides": []
-              }
-            }
-          }
-        }
-      },
-      "panel-15": {
-        "kind": "Panel",
-        "spec": {
-          "id": 15,
-          "title": "Message Processing Rate",
-          "description": "",
-          "links": [],
-          "data": {
-            "kind": "QueryGroup",
-            "spec": {
-              "queries": [
-                {
-                  "kind": "PanelQuery",
-                  "spec": {
-                    "query": {
-                      "kind": "DataQuery",
-                      "group": "prometheus",
-                      "version": "v0",
-                      "spec": {
-                        "editorMode": "builder",
-                        "expr": "rate(anon3anon_message_duration_seconds_count[$__rate_interval])",
-                        "legendFormat": "{{event_type}}",
-                        "range": true
-                      },
-                      "labels": {
-                        "grafana.app/export-label": "prometheus-1",
-                        "grafana.app/export-datasource-name": "Prometheus"
-                      }
-                    },
-                    "refId": "A",
-                    "hidden": false
-                  }
-                }
-              ],
-              "transformations": [],
-              "queryOptions": {}
-            }
-          },
-          "vizConfig": {
-            "kind": "VizConfig",
-            "group": "timeseries",
-            "version": "13.2.2",
-            "spec": {
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
                 },
                 "tooltip": {
                   "hideZeros": false,
@@ -800,8 +685,8 @@
                       "group": "prometheus",
                       "version": "v0",
                       "spec": {
-                        "editorMode": "builder",
-                        "expr": "rate(anon3anon_retention_removed_total[$__rate_interval])",
+                        "editorMode": "code",
+                        "expr": "sum without (pod, instance) (\r\n    rate(anon3anon_retention_removed_total[$__rate_interval])\r\n)",
                         "legendFormat": "{{table}}",
                         "range": true
                       },
@@ -900,7 +785,7 @@
         "kind": "Panel",
         "spec": {
           "id": 18,
-          "title": "P95 Processing Latency",
+          "title": "P95 Message Processing Latency",
           "description": "",
           "links": [],
           "data": {
@@ -1806,7 +1691,7 @@
                         "height": 8,
                         "element": {
                           "kind": "ElementReference",
-                          "name": "panel-15"
+                          "name": "panel-18"
                         }
                       }
                     },
@@ -1833,19 +1718,6 @@
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-17"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 0,
-                        "y": 33,
-                        "width": 12,
-                        "height": 8,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-18"
                         }
                       }
                     }

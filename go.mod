@@ -5,7 +5,7 @@ go 1.26.10
 require (
 	github.com/go-faster/errors v0.8.0
 	github.com/go-telegram/bot v1.27.0
-	github.com/nightnoryu/go-kita v1.9.0
+	github.com/nightnoryu/go-kita v1.9.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/stretchr/testify v1.12.1
 	modernc.org/sqlite v1.61.0

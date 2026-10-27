@@ -1,6 +1,10 @@
 [tools]
 go = "1.26.10"
 golangci-lint = "2.12.2"
+sops = "3.13.3"
+age = "1.3.2"
+ksops = "4.5.1"
+kustomize = "5.8.3"
 kubectl = "1.37.0"
 kubeconform = "0.8.0"
 
@@ -53,6 +57,19 @@ sources = [
 ]
 outputs = [ "bin/anon3anon" ]
 
+# Deployment
+
+[tasks.secrets]
+run = "sops k8s/prod/secret.enc.yaml"
+
+[tasks.deploy]
+confirm = { message = "Deploy to production?", yes = "Deploy", no = "Cancel", default = "no" }
+run = """
+kustomize build --enable-alpha-plugins --enable-exec k8s/prod | kubectl apply -f -
+kubectl rollout restart deployment/anon3anon -n anon3anon
+kubectl rollout status deployment/anon3anon -n anon3anon --timeout=300s
+"""
+
 # Checks
 
 [tasks.check]
@@ -63,8 +80,6 @@ run = "go test ./..."
 
 [tasks.lint]
 run = "golangci-lint run"
-
-# Other checks
 
 [tasks."k8s:lint"]
 run = """

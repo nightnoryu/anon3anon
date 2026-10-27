@@ -5,7 +5,7 @@ container that bind-mounts `./bin`. mise drives every task, Docker runs the cont
 
 ## Prerequisites
 
-- [mise](https://mise.jdx.dev) - provisions the Go and `golangci-lint` versions
+- [mise](https://mise.jdx.dev) - provisions Go and other tools versions
   pinned in [`mise.toml`](../mise.toml) and runs the task scripts
 - Docker with the `docker-compose-plugin`
 
@@ -57,23 +57,19 @@ mise run dev:reload   # rebuild ./bin, then `docker compose restart anon3anon`
 
 Defined in [`mise.toml`](../mise.toml):
 
-<!-- markdownlint-disable MD013 -->
-| Task                    | Action                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| `mise run`              | `build` then `check` (the `default` task)                                        |
-| `mise run build`        | `go build -trimpath -o ./bin/anon3anon ./cmd/anon3anon` (depends on `modules`)   |
-| `mise run modules`      | `go mod download`                                                                |
-| `mise run tidy`         | `go mod tidy`                                                                    |
-| `mise run check`        | `lint` + `test:unit`                                                             |
-| `mise run lint`         | `golangci-lint run`                                                              |
-| `mise run test:unit`    | `go test ./...`                                                                  |
-| `mise run dev`          | build, then `docker compose up -d --wait`                                        |
-| `mise run dev:reload`   | build, then `docker compose restart anon3anon`                                   |
-| `mise run dev:down`     | `docker compose down`                                                            |
-| `mise run dev:ps`       | `docker compose ps`                                                              |
-| `mise run dev:logs`     | `docker compose logs -f`                                                         |
-<!-- markdownlint-enable MD013 -->
-
-The build environment is fixed by `mise.toml`: `GOOS=linux`, `GOARCH=amd64`,
-`CGO_ENABLED=0` (the SQLite driver is `modernc.org/sqlite`, pure Go - no C
-toolchain needed).
+| Task                    | Action                                                   |
+| ----------------------- | -------------------------------------------------------- |
+| `mise run`              | `build` then `check` (the `default` task)                |
+| `mise run build`        | `go build -trimpath -o ./bin/anon3anon ./cmd/anon3anon`  |
+| `mise run modules`      | `go mod download`                                        |
+| `mise run tidy`         | `go mod tidy`                                            |
+| `mise run check`        | `lint` + `test:unit`                                     |
+| `mise run lint`         | `golangci-lint run`                                      |
+| `mise run test:unit`    | `go test ./...`                                          |
+| `mise run dev`          | build, then `docker compose up -d --wait`                |
+| `mise run dev:reload`   | build, then `docker compose restart anon3anon`           |
+| `mise run dev:down`     | `docker compose down`                                    |
+| `mise run dev:ps`       | `docker compose ps`                                      |
+| `mise run dev:logs`     | `docker compose logs -f`                                 |
+| `mise run secrets`      | edit prod secrets with sops                              |
+| `mise run deploy`       | apply prod manifests for current context                 |

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.1
+
+- security fixes
+
 ## v1.4.0
 
 - export Telegram message count metrics by event type and outcome, and processing duration by event type

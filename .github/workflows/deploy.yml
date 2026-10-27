@@ -27,4 +27,4 @@ jobs:
       - name: Deploy
         env:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-        run: mise --yes run deploy
+        run: mise run --yes deploy

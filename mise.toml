@@ -1,6 +1,6 @@
 [tools]
-go = "1.26.10"
-golangci-lint = "2.12.2"
+go = "1.27.3"
+golangci-lint = "2.15.0"
 sops = "3.13.3"
 age = "1.3.2"
 ksops = "4.5.1"
@@ -45,15 +45,15 @@ run = "go mod tidy"
 
 [tasks.modules]
 run = "go mod download"
-sources = [ "go.mod", "go.sum" ]
+sources = [ "go.*" ]
 outputs = { auto = true }
 
 [tasks.build]
 depends = [ "modules" ]
-run = "go build -trimpath -v -o ./bin/anon3anon ./cmd/anon3anon"
+run = "go build -o ./bin/anon3anon ./cmd/anon3anon"
 sources = [
-    "go.*",
     "**/*.go",
+    "go.*",
 ]
 outputs = [ "bin/anon3anon" ]
 
@@ -89,6 +89,4 @@ trap 'rm -f "$rendered"' EXIT
 kubectl kustomize k8s/base > "$rendered"
 kubeconform -strict -summary -ignore-missing-schemas "$rendered"
 """
-sources = [
-    "k8s/base/**/*",
-]
+sources = [ "k8s/base/**/*" ]

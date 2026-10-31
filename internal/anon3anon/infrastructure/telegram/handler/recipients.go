@@ -7,8 +7,6 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-// registerRecipient registers the sender as a message recipient (subject to the
-// allow list) and replies with their personal link.
 func (d DependencyContainer) registerRecipient(ctx context.Context, c telegramClient, msg *models.Message) {
 	if !d.AllowedUsers.Allowed(msg.From.ID) {
 		d.reply(ctx, c, msg.Chat.ID, d.Messages.registrationNotAllowed(d.OwnerLink))

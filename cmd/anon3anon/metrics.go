@@ -8,8 +8,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"anon3anon/pkg/domain"
-	"anon3anon/pkg/infrastructure/telegram"
+	"anon3anon/internal/anon3anon/domain"
+	"anon3anon/internal/anon3anon/infrastructure/telegram"
 )
 
 type appMetrics struct {

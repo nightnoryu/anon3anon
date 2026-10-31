@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"maps"
 	"testing"
 	"time"
 
@@ -12,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"anon3anon/pkg/infrastructure/telegram"
-	"anon3anon/pkg/pseudonym"
+	telegram2 "anon3anon/internal/anon3anon/infrastructure/telegram"
+	"anon3anon/internal/common/pseudonym"
 )
 
 func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
@@ -24,13 +25,13 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 		message     *models.Message
 		wantEvent   string
 		wantCommand string
-		wantOutcome telegram.Outcome
+		wantOutcome telegram2.Outcome
 	}{
 		{
 			name:        "anonymous message",
 			message:     testMessage("hello"),
 			wantEvent:   eventTypeAnonymousMessage,
-			wantOutcome: telegram.OutcomeSuccess,
+			wantOutcome: telegram2.OutcomeSuccess,
 		},
 		{
 			name: "reply",
@@ -41,21 +42,21 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 				ReplyToMessage: &models.Message{ID: 98},
 			},
 			wantEvent:   eventTypeReply,
-			wantOutcome: telegram.OutcomeSuccess,
+			wantOutcome: telegram2.OutcomeSuccess,
 		},
 		{
 			name:        "known command",
 			message:     testCommand("/start token", 6),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: "start",
-			wantOutcome: telegram.OutcomeSuccess,
+			wantOutcome: telegram2.OutcomeSuccess,
 		},
 		{
 			name:        "command addressed to bot",
 			message:     testCommand("/help@anon3anon_bot", 19),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: "help",
-			wantOutcome: telegram.OutcomeSuccess,
+			wantOutcome: telegram2.OutcomeSuccess,
 		},
 		{
 			name: "command takes precedence over reply",
@@ -66,14 +67,14 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 			}(),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: "block",
-			wantOutcome: telegram.OutcomeSuccess,
+			wantOutcome: telegram2.OutcomeSuccess,
 		},
 		{
 			name:        "unknown command is bounded",
 			message:     testCommand("/unregistered", 13),
 			wantEvent:   eventTypeCommandCall,
 			wantCommand: unknownCommand,
-			wantOutcome: telegram.OutcomeSuccess,
+			wantOutcome: telegram2.OutcomeSuccess,
 		},
 	}
 
@@ -115,10 +116,10 @@ func TestLoggingMiddlewareEmitsCompletionEvent(t *testing.T) {
 func TestLoggingMiddlewareEmitsRecordedOutcome(t *testing.T) {
 	t.Parallel()
 
-	for _, outcome := range []telegram.Outcome{
-		telegram.OutcomeRateLimited,
-		telegram.OutcomeBlocked,
-		telegram.OutcomeError,
+	for _, outcome := range []telegram2.Outcome{
+		telegram2.OutcomeRateLimited,
+		telegram2.OutcomeBlocked,
+		telegram2.OutcomeError,
 	} {
 		t.Run(string(outcome), func(t *testing.T) {
 			t.Parallel()
@@ -126,7 +127,7 @@ func TestLoggingMiddlewareEmitsRecordedOutcome(t *testing.T) {
 			logger := newCaptureLogger()
 			wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil, nil)(
 				func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
-					telegram.SetOutcome(ctx, outcome)
+					telegram2.SetOutcome(ctx, outcome)
 				},
 			)
 
@@ -145,8 +146,8 @@ func TestLoggingMiddlewareIncludesBaseFieldsInEveryMessageLog(t *testing.T) {
 	logger.state.captureAll = true
 	wrapped := NewLoggingMiddleware(logger, testKeyring(t), nil, nil)(
 		func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
-			telegram.SetOutcome(ctx, telegram.OutcomeError)
-			telegram.EventLogger(ctx, logger).Error(errors.New("handler failed"))
+			telegram2.SetOutcome(ctx, telegram2.OutcomeError)
+			telegram2.EventLogger(ctx, logger).Error(errors.New("handler failed"))
 		},
 	)
 
@@ -179,16 +180,16 @@ func TestLoggingMiddlewareObservesCompletedMessages(t *testing.T) {
 	t.Parallel()
 
 	var eventType string
-	var outcome telegram.Outcome
+	var outcome telegram2.Outcome
 	var duration time.Duration
 	observed := 0
 	wrapped := NewLoggingMiddleware(newCaptureLogger(), testKeyring(t), nil,
-		func(event string, result telegram.Outcome, elapsed time.Duration) {
+		func(event string, result telegram2.Outcome, elapsed time.Duration) {
 			observed++
 			eventType, outcome, duration = event, result, elapsed
 		},
 	)(func(ctx context.Context, _ *bot.Bot, _ *models.Update) {
-		telegram.SetOutcome(ctx, telegram.OutcomeRateLimited)
+		telegram2.SetOutcome(ctx, telegram2.OutcomeRateLimited)
 	})
 
 	wrapped(context.Background(), nil, &models.Update{ID: 7, Message: testMessage("hello")})
@@ -196,7 +197,7 @@ func TestLoggingMiddlewareObservesCompletedMessages(t *testing.T) {
 
 	assert.Equal(t, 1, observed)
 	assert.Equal(t, eventTypeAnonymousMessage, eventType)
-	assert.Equal(t, telegram.OutcomeRateLimited, outcome)
+	assert.Equal(t, telegram2.OutcomeRateLimited, outcome)
 	assert.GreaterOrEqual(t, duration, time.Duration(0))
 }
 
@@ -247,12 +248,8 @@ func newCaptureLogger() *captureLogger {
 
 func (l *captureLogger) WithFields(fields log.Fields) log.Logger {
 	merged := make(log.Fields, len(l.fields)+len(fields))
-	for key, value := range l.fields {
-		merged[key] = value
-	}
-	for key, value := range fields {
-		merged[key] = value
-	}
+	maps.Copy(merged, l.fields)
+	maps.Copy(merged, fields)
 	return &captureLogger{state: l.state, fields: merged}
 }
 

@@ -8,8 +8,8 @@ import (
 
 	"github.com/nightnoryu/go-kita/log"
 
-	"anon3anon/pkg/infrastructure/health"
-	"anon3anon/pkg/infrastructure/storage/sqlite"
+	"anon3anon/internal/anon3anon/infrastructure/health"
+	"anon3anon/internal/anon3anon/infrastructure/storage/sqlite"
 )
 
 func startHealthServer(ctx context.Context, addr string, store *sqlite.Store, logger log.Logger, metrics *appMetrics) {

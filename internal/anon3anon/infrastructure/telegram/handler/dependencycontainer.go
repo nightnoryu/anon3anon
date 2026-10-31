@@ -7,8 +7,8 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/nightnoryu/go-kita/log"
 
-	"anon3anon/pkg/domain"
-	"anon3anon/pkg/infrastructure/telegram"
+	"anon3anon/internal/anon3anon/domain"
+	telegram2 "anon3anon/internal/anon3anon/infrastructure/telegram"
 )
 
 type telegramClient interface {
@@ -32,6 +32,6 @@ func (d DependencyContainer) reply(ctx context.Context, c telegramClient, chatID
 }
 
 func (d DependencyContainer) logError(ctx context.Context, err error) {
-	telegram.SetOutcome(ctx, telegram.OutcomeError)
-	telegram.EventLogger(ctx, d.Logger).Error(err)
+	telegram2.SetOutcome(ctx, telegram2.OutcomeError)
+	telegram2.EventLogger(ctx, d.Logger).Error(err)
 }

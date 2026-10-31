@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-faster/errors"
 
-	"anon3anon/pkg/pseudonym"
+	"anon3anon/internal/common/pseudonym"
 )
 
 func initKeyring(encodedKey string) (*pseudonym.Keyring, error) {

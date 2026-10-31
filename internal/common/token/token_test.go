@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"anon3anon/pkg/token"
+	"anon3anon/internal/common/token"
 )
 
 func TestNew(t *testing.T) {

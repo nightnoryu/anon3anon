@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"anon3anon/pkg/pseudonym"
+	"anon3anon/internal/common/pseudonym"
 )
 
 func testKey(b byte) []byte {

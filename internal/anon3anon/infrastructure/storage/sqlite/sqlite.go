@@ -12,9 +12,9 @@ import (
 	sqlitedrv "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
-	"anon3anon/pkg/domain"
-	"anon3anon/pkg/pseudonym"
-	"anon3anon/pkg/token"
+	"anon3anon/internal/anon3anon/domain"
+	"anon3anon/internal/common/pseudonym"
+	"anon3anon/internal/common/token"
 )
 
 //go:embed schema.sql
@@ -58,11 +58,6 @@ func (s *Store) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)
 }
 
-// UpsertUser resolves the row in a single statement rather than reading before
-// writing: two concurrent updates from the same user would otherwise both miss
-// the row, and the loser's INSERT would fail on the tg_user_id primary key -
-// indistinguishable here from a link-token collision, so it would burn every
-// retry and report a token exhaustion that never happened.
 func (s *Store) UpsertUser(ctx context.Context, tgUserID, chatID int64) (domain.User, error) {
 	now := time.Now().UTC()
 	for range tokenAttempts {
@@ -162,14 +157,8 @@ func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Resolve the account first. Nothing is deleted for a caller who is not a
-	// registered recipient: the related-row filters below also match plain
-	// senders, and wiping a stranger's live session/relays on a no-op /delete
-	// would be silent cross-user state destruction.
 	var chatID int64
-	err = tx.QueryRowContext(ctx,
-		`SELECT chat_id FROM users WHERE tg_user_id = ?`, tgUserID,
-	).Scan(&chatID)
+	err = tx.QueryRowContext(ctx, `SELECT chat_id FROM users WHERE tg_user_id = ?`, tgUserID).Scan(&chatID)
 	switch {
 	case stderrors.Is(err, sql.ErrNoRows):
 		return false, nil
@@ -177,11 +166,6 @@ func (s *Store) DeleteUser(ctx context.Context, tgUserID int64) (bool, error) {
 		return false, errors.Wrap(err, "lookup user")
 	}
 
-	// sessions.owner_user_id references users, so sessions must go before the
-	// users row. Match both roles: rows pointed at this owner and rows for this
-	// user's own chat as a sender. chat_id == tg_user_id for private chats, but
-	// use the stored value so this stays correct if that ever changes. The
-	// sender side is matched by reference because that is all the rows hold.
 	chatRef := s.keys.Ref(chatID)
 	stmts := []struct {
 		query string

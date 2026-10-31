@@ -6,7 +6,7 @@ import (
 
 	"github.com/nightnoryu/go-kita/log"
 
-	"anon3anon/pkg/infrastructure/storage/sqlite"
+	"anon3anon/internal/anon3anon/infrastructure/storage/sqlite"
 )
 
 func startRetentionSweeper(ctx context.Context, conf *config, store *sqlite.Store, logger log.Logger, metrics *appMetrics) {

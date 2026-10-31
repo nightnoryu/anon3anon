@@ -9,8 +9,8 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/nightnoryu/go-kita/log"
 
-	"anon3anon/pkg/infrastructure/telegram"
-	"anon3anon/pkg/pseudonym"
+	"anon3anon/internal/anon3anon/infrastructure/telegram"
+	"anon3anon/internal/common/pseudonym"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 
-	"anon3anon/pkg/domain"
-	"anon3anon/pkg/infrastructure/telegram"
+	"anon3anon/internal/anon3anon/domain"
+	"anon3anon/internal/anon3anon/infrastructure/telegram"
 )
 
 var (

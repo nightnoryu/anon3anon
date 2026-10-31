@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"anon3anon/pkg/domain"
-	"anon3anon/pkg/infrastructure/storage/sqlite"
-	"anon3anon/pkg/pseudonym"
+	domain2 "anon3anon/internal/anon3anon/domain"
+	"anon3anon/internal/anon3anon/infrastructure/storage/sqlite"
+	"anon3anon/internal/common/pseudonym"
 )
 
 const (
@@ -201,7 +201,7 @@ func TestDeleteUserCascades(t *testing.T) {
 	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID)) // sender -> owner
 	require.NoError(t, store.SetSession(ctx, 10, keep.TgUserID))  // owner acting as a sender
 	require.NoError(t, store.SetSession(ctx, 51, keep.TgUserID))  // unrelated
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 10, DestMsgID: 1, OriginChatID: 50, OwnerUserID: owner.TgUserID,
 	}))
 	require.NoError(t, store.Block(ctx, owner.TgUserID, 50))
@@ -253,7 +253,7 @@ func TestDeleteUserIgnoresNonRecipients(t *testing.T) {
 	owner, err := store.UpsertUser(ctx, 10, 10)
 	require.NoError(t, err)
 	require.NoError(t, store.SetSession(ctx, 50, owner.TgUserID))
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 10, DestMsgID: 1, OriginChatID: 50, OwnerUserID: owner.TgUserID,
 	}))
 
@@ -280,7 +280,7 @@ func TestPurgeExpired(t *testing.T) {
 	owner, err := store.UpsertUser(ctx, 10, 10)
 	require.NoError(t, err)
 	require.NoError(t, store.SetSession(ctx, 501, owner.TgUserID))
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 7, DestMsgID: 42, OriginChatID: 9, OwnerUserID: owner.TgUserID,
 	}))
 	require.NoError(t, store.Block(ctx, owner.TgUserID, 501))
@@ -291,13 +291,13 @@ func TestPurgeExpired(t *testing.T) {
 	// Nothing is old enough yet.
 	stats, err := store.PurgeExpired(ctx, time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
-	assert.Equal(t, domain.PurgeStats{}, stats)
+	assert.Equal(t, domain2.PurgeStats{}, stats)
 
 	// Everything now predates the cutoff. The cutoff is pushed a full rate
 	// window ahead so the message_rates bucket index also falls before it.
 	stats, err = store.PurgeExpired(ctx, time.Now().UTC().Add(2*testRateWindow))
 	require.NoError(t, err)
-	assert.Equal(t, domain.PurgeStats{Sessions: 1, Relays: 1, Blocks: 1, MessageRates: 1}, stats)
+	assert.Equal(t, domain2.PurgeStats{Sessions: 1, Relays: 1, Blocks: 1, MessageRates: 1}, stats)
 
 	_, ok, err = store.GetSession(ctx, 501)
 	require.NoError(t, err)
@@ -314,7 +314,7 @@ func TestPurgeExpired(t *testing.T) {
 	// Idempotent: nothing left to purge is not an error.
 	stats, err = store.PurgeExpired(ctx, time.Now().UTC().Add(time.Minute))
 	require.NoError(t, err)
-	assert.Equal(t, domain.PurgeStats{}, stats)
+	assert.Equal(t, domain2.PurgeStats{}, stats)
 }
 
 func TestPurgeExpiredKeepsCurrentMessageRateBucket(t *testing.T) {
@@ -427,7 +427,7 @@ func TestRelayPutLookupAndUpsert(t *testing.T) {
 	ctx := context.Background()
 	store := newStore(t)
 
-	r := domain.Relay{DestChatID: 7, DestMsgID: 42, OriginChatID: 9, OwnerUserID: 3}
+	r := domain2.Relay{DestChatID: 7, DestMsgID: 42, OriginChatID: 9, OwnerUserID: 3}
 	require.NoError(t, store.PutRelay(ctx, r))
 
 	got, ok, err := store.LookupRelay(ctx, 7, 42)
@@ -437,7 +437,7 @@ func TestRelayPutLookupAndUpsert(t *testing.T) {
 	assert.Equal(t, int64(3), got.OwnerUserID)
 
 	// Re-delivering the same (chat, msg) overwrites cleanly.
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{DestChatID: 7, DestMsgID: 42, OriginChatID: 11, OwnerUserID: 3}))
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{DestChatID: 7, DestMsgID: 42, OriginChatID: 11, OwnerUserID: 3}))
 	got, ok, err = store.LookupRelay(ctx, 7, 42)
 	require.NoError(t, err)
 	require.True(t, ok)
@@ -532,7 +532,7 @@ func TestUpsertUserIsSafeUnderConcurrency(t *testing.T) {
 	const callers = 8
 	var (
 		wg    sync.WaitGroup
-		users = make([]domain.User, callers)
+		users = make([]domain2.User, callers)
 		errs  = make([]error, callers)
 	)
 	for i := range callers {
@@ -558,14 +558,14 @@ func TestClearRelaysForOwner(t *testing.T) {
 	ctx := context.Background()
 	store := newStore(t)
 
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 1000, DestMsgID: 1, OriginChatID: 50, OwnerUserID: 10,
 	}))
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 50, DestMsgID: 2, OriginChatID: 1000, OwnerUserID: 10,
 	}))
 	// A different owner's conversation must survive.
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 2000, DestMsgID: 3, OriginChatID: 50, OwnerUserID: 20,
 	}))
 
@@ -598,17 +598,17 @@ func TestClearRelaysForSenderOnlyTouchesThatPair(t *testing.T) {
 	store := newStore(t)
 
 	// Owner 10 talks to senders 50 and 51.
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 1000, DestMsgID: 1, OriginChatID: 50, OwnerUserID: 10,
 	}))
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 50, DestMsgID: 2, OriginChatID: 1000, OwnerUserID: 10,
 	}))
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 1000, DestMsgID: 3, OriginChatID: 51, OwnerUserID: 10,
 	}))
 	// Sender 50 also talks to owner 20.
-	require.NoError(t, store.PutRelay(ctx, domain.Relay{
+	require.NoError(t, store.PutRelay(ctx, domain2.Relay{
 		DestChatID: 50, DestMsgID: 4, OriginChatID: 2000, OwnerUserID: 20,
 	}))
 

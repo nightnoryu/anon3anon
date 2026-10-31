@@ -14,10 +14,10 @@ import (
 	"github.com/nightnoryu/go-kita/log"
 	"github.com/nightnoryu/go-kita/retry"
 
-	"anon3anon/pkg/infrastructure/storage/sqlite"
-	"anon3anon/pkg/infrastructure/telegram/handler"
-	"anon3anon/pkg/infrastructure/telegram/middleware"
-	"anon3anon/pkg/pseudonym"
+	"anon3anon/internal/anon3anon/infrastructure/storage/sqlite"
+	handler2 "anon3anon/internal/anon3anon/infrastructure/telegram/handler"
+	middleware2 "anon3anon/internal/anon3anon/infrastructure/telegram/middleware"
+	"anon3anon/internal/common/pseudonym"
 )
 
 const (
@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		stdlog.Fatal(err)
 	}
-	messages, err := handler.MessagesForLanguage(conf.Language)
+	messages, err := handler2.MessagesForLanguage(conf.Language)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func main() {
 	b.Start(ctx)
 }
 
-func registerCommands(ctx context.Context, b *bot.Bot, messages handler.Messages) error {
+func registerCommands(ctx context.Context, b *bot.Bot, messages handler2.Messages) error {
 	return retryTelegramStartup(ctx, func(ctx context.Context) error {
 		_, err := b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
 			Commands: messages.CommandDescriptions(),
@@ -96,7 +96,7 @@ func initBotOptions(
 	store *sqlite.Store,
 	keys *pseudonym.Keyring,
 	logger log.Logger,
-	messages handler.Messages,
+	messages handler2.Messages,
 	metrics *appMetrics,
 ) ([]bot.Option, error) {
 	username, err := resolveBotUsername(ctx, conf.TelegramBotToken)
@@ -104,11 +104,11 @@ func initBotOptions(
 		return nil, err
 	}
 
-	deps := handler.DependencyContainer{
+	deps := handler2.DependencyContainer{
 		Store:        store,
 		Logger:       logger,
 		BotUsername:  username,
-		AllowedUsers: handler.NewAllowList(conf.AllowedUserIDs),
+		AllowedUsers: handler2.NewAllowList(conf.AllowedUserIDs),
 		Messages:     messages,
 		OwnerLink:    conf.OwnerLink,
 	}
@@ -119,17 +119,17 @@ func initBotOptions(
 			logger.Error(err)
 		}),
 		bot.WithMiddlewares(
-			middleware.NewPrivateChatMiddleware(),
-			middleware.NewLoggingMiddleware(logger, keys, handler.CommandNames(), metrics.observeMessage),
+			middleware2.NewPrivateChatMiddleware(),
+			middleware2.NewLoggingMiddleware(logger, keys, handler2.CommandNames(), metrics.observeMessage),
 		),
-		bot.WithMessageTextHandler(handler.CommandStart, bot.MatchTypeCommandStartOnly, handler.NewStartCommandHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandHelp, bot.MatchTypeCommandStartOnly, handler.NewHelpHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandMyLink, bot.MatchTypeCommandStartOnly, handler.NewMyLinkHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandRevoke, bot.MatchTypeCommandStartOnly, handler.NewRevokeHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandBlock, bot.MatchTypeCommandStartOnly, handler.NewBlockHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandStop, bot.MatchTypeCommandStartOnly, handler.NewStopHandler(deps)),
-		bot.WithMessageTextHandler(handler.CommandDelete, bot.MatchTypeCommandStartOnly, handler.NewDeleteHandler(deps)),
-		bot.WithDefaultHandler(handler.NewMessageRouter(deps)),
+		bot.WithMessageTextHandler(handler2.CommandStart, bot.MatchTypeCommandStartOnly, handler2.NewStartCommandHandler(deps)),
+		bot.WithMessageTextHandler(handler2.CommandHelp, bot.MatchTypeCommandStartOnly, handler2.NewHelpHandler(deps)),
+		bot.WithMessageTextHandler(handler2.CommandMyLink, bot.MatchTypeCommandStartOnly, handler2.NewMyLinkHandler(deps)),
+		bot.WithMessageTextHandler(handler2.CommandRevoke, bot.MatchTypeCommandStartOnly, handler2.NewRevokeHandler(deps)),
+		bot.WithMessageTextHandler(handler2.CommandBlock, bot.MatchTypeCommandStartOnly, handler2.NewBlockHandler(deps)),
+		bot.WithMessageTextHandler(handler2.CommandStop, bot.MatchTypeCommandStartOnly, handler2.NewStopHandler(deps)),
+		bot.WithMessageTextHandler(handler2.CommandDelete, bot.MatchTypeCommandStartOnly, handler2.NewDeleteHandler(deps)),
+		bot.WithDefaultHandler(handler2.NewMessageRouter(deps)),
 	}, nil
 }
 

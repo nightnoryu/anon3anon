@@ -101,8 +101,6 @@ var englishMessages = Messages{
 	startCommandDescription: "Get your personal link", helpCommandDescription: "How to use the bot", myLinkCommandDescription: "Show your personal link", revokeCommandDescription: "Replace your personal link", blockCommandDescription: "Reply to block a sender", stopCommandDescription: "Leave the current conversation", deleteCommandDescription: "Delete your account and related data",
 }
 
-// Russian compatibility values keep the existing handler tests focused on
-// behavior. Production handlers always use DependencyContainer.Messages.
 var (
 	messageSentMessage        = russianMessages.messageSent
 	replySentMessage          = russianMessages.replySent

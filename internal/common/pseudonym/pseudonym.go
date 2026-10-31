@@ -58,14 +58,6 @@ func NewKeyring(masterKey []byte) (*Keyring, error) {
 	return &Keyring{refKey: refKey, aead: aead}, nil
 }
 
-// ParseKey decodes a master key given as hex or as base64 (standard or URL
-// alphabet, padded or not).
-//
-// Hex is tried first because the two encodings overlap: a hex string is also
-// valid base64 whenever its length is a multiple of four, and decoding it as
-// base64 would yield different key bytes than the operator wrote down. The
-// reverse collision needs a base64 key made exclusively of hex digits, which no
-// random key is.
 func ParseKey(encoded string) ([]byte, error) {
 	trimmed := strings.TrimSpace(encoded)
 	if trimmed == "" {
@@ -93,8 +85,6 @@ func ParseKey(encoded string) ([]byte, error) {
 // the same tag under the same key, which is what makes it usable as a primary
 // key, and no tag can be turned back into a chat ID without the key.
 func (k *Keyring) Ref(chatID int64) string {
-	// Chat IDs are signed and can be negative; the round trip through uint64 is
-	// a reinterpretation of the same bits, not a range conversion.
 	var id [8]byte
 	binary.BigEndian.PutUint64(id[:], uint64(chatID)) //nolint:gosec // bit reinterpretation
 
@@ -103,9 +93,6 @@ func (k *Keyring) Ref(chatID int64) string {
 	return hex.EncodeToString(mac.Sum(nil)[:refLen])
 }
 
-// Seal encrypts chatID so it can be recovered later by Open. A fresh random
-// nonce is used per call, so two rows holding the same chat ID are not
-// recognisable as such.
 func (k *Keyring) Seal(chatID int64) ([]byte, error) {
 	nonce := make([]byte, k.aead.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
@@ -118,8 +105,6 @@ func (k *Keyring) Seal(chatID int64) ([]byte, error) {
 	return k.aead.Seal(nonce, nonce, plaintext[:], nil), nil
 }
 
-// Open recovers a chat ID produced by Seal. It fails on any sealed value that
-// was truncated, tampered with, or written under a different key.
 func (k *Keyring) Open(sealed []byte) (int64, error) {
 	nonceSize := k.aead.NonceSize()
 	if len(sealed) < nonceSize {

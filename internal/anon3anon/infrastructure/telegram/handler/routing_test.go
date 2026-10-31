@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"anon3anon/pkg/infrastructure/storage/sqlite"
-	"anon3anon/pkg/infrastructure/telegram"
-	"anon3anon/pkg/pseudonym"
+	"anon3anon/internal/anon3anon/infrastructure/storage/sqlite"
+	"anon3anon/internal/anon3anon/infrastructure/telegram"
+	"anon3anon/internal/common/pseudonym"
 )
 
 type fakeClient struct {
